@@ -1,8 +1,8 @@
 import React from "react";
-import VerticalBars from "./components/VerticalBars";
+import HorizontalBars from "./components/VerticalBars";
 
 function App() {
-  return <VerticalBars></VerticalBars>;
+  return <HorizontalBars></HorizontalBars>;
 }
 
 export default App;

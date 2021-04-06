@@ -50,7 +50,7 @@ const dimensions = {
 const ideal = [25, 0.95, -871, 150000, 300];
 const nadir = [101, 0.11, 801, 520, 100];
 
-function VerticalBars() {
+const HorizontalBars = () => {
   /* 
   These hooks are used to store states, which are meaningful to the operation of this component.
   - ref should only ever point to the single svg-element
@@ -297,6 +297,6 @@ function VerticalBars() {
       </ul>
     </div>
   );
-}
+};
 
-export default VerticalBars;
+export default HorizontalBars;
