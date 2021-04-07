@@ -5,44 +5,32 @@ import { axisBottom } from "d3-axis";
 import "d3-transition";
 import { easeCubic } from "d3-ease";
 import "./Svg.css";
+import { ObjectiveData } from "../types/ProblemTypes";
 
-const initialData = [
-  {
-    name: "price",
-    value: 50,
-    direction: "min",
-    selected: false,
-  },
-  {
-    name: "quality",
-    value: 0.2,
-    direction: "max",
-    selected: false,
-  },
-  {
-    name: "time",
-    direction: "min",
-    value: -500,
-    selected: false,
-  },
-  {
-    name: "efficiency",
-    direction: "max",
-    value: 25000,
-    selected: false,
-  },
-  {
-    name: "???",
-    direction: "max",
-    value: 200,
-    selected: false,
-  },
-];
+interface RectDimensions {
+  chartWidth: number;
+  chartHeight: number;
+  marginLeft: number;
+  marginRight: number;
+}
 
-const ideal = [25, 0.95, -871, 150000, 300];
-const nadir = [101, 0.11, 801, 520, 100];
+interface HorizontalBarsProps {
+  objectiveData: ObjectiveData;
+  setReferencePoint: React.Dispatch<React.SetStateAction<number[]>>;
+  dimensionsMaybe?: RectDimensions;
+}
+const defaultDimensions = {
+  marginLeft: 80,
+  marginRight: 160,
+  chartHeight: 600,
+  chartWidth: 800,
+};
 
-const HorizontalBars = () => {
+const HorizontalBars = ({
+  objectiveData,
+  setReferencePoint,
+  dimensionsMaybe,
+}: HorizontalBarsProps) => {
   /* 
   These hooks are used to store states, which are meaningful to the operation of this component.
   - ref should only ever point to the single svg-element
@@ -59,16 +47,27 @@ const HorizontalBars = () => {
     null,
     undefined
   >>(null);
-  const [data] = useState(initialData);
+  const [data] = useState(
+    objectiveData.values[0].value.map((value, i) => {
+      return {
+        name: objectiveData.names[i],
+        value: value,
+        direction: objectiveData.directions[i],
+        selected: objectiveData.values[0].selected,
+      };
+    })
+  );
+  const [ideal] = useState(objectiveData.ideal);
+  const [nadir] = useState(objectiveData.nadir);
   const [prefPointerLocs, setPrefPointerLocs] = useState(
     data.map((d) => d.value)
   );
-  const [dimensions, setDimensions] = useState({
-    marginLeft: 100,
-    marginRight: 100,
-    chartHeight: 500,
-    chartWidth: 500,
-  });
+  const [infoPointerLocs, setInfoPointerLocs] = useState(
+    data.map((d) => d.value)
+  );
+  const [dimensions] = useState(
+    dimensionsMaybe ? dimensionsMaybe! : defaultDimensions
+  );
 
   // create an array of linear scales to scale each objective being maximized
   const xs = useCallback(() => {
@@ -77,7 +76,7 @@ const HorizontalBars = () => {
         .domain([nadir[i], ideal[i]])
         .range([0, dimensions.chartWidth]);
     });
-  }, [dimensions, data]);
+  }, [dimensions, data, ideal, nadir]);
 
   // create also an array of reverse scales to be used when minimizing
   const xs_rev = useCallback(() => {
@@ -86,12 +85,12 @@ const HorizontalBars = () => {
         .domain([ideal[i], nadir[i]])
         .range([0, dimensions.chartWidth]);
     });
-  }, [dimensions, data]);
+  }, [dimensions, data, ideal, nadir]);
 
   // create an array of bottom axises to work as the individual x-axis for each bar
   const xAxises = useCallback(() => {
     return data.map((d, i) => {
-      if (d.direction === "max") {
+      if (d.direction === -1) {
         return axisBottom(xs()[i]);
       } else {
         return axisBottom(xs_rev()[i]);
@@ -99,22 +98,26 @@ const HorizontalBars = () => {
     });
   }, [data, xs, xs_rev]);
 
+  // create a discrete band to position each of the horizontal bars
+  const y = useCallback(
+    () =>
+      scaleBand()
+        .domain(data.map((d) => d.name))
+        .range([0, dimensions.chartHeight])
+        .padding(0.35),
+    [dimensions, data]
+  );
+
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
     // create a discrete band to position each of the horizontal bars
     // this has to be created in the effect because it's type cannot be coerced as of yet
     // (may in a future version of d3)
-    const y = scaleBand()
-      .domain(data.map((d) => d.name))
-      .range([0, dimensions.chartHeight])
-      .padding(0.35);
-
     if (!selection) {
       // add svg and update selection
-      const renderH = 600;
-      const renderW = 1000;
-      const renderMarginL = 0.1 * renderW;
-      const renderMarginR = 0.2 * renderW;
+      const renderH = dimensions.chartHeight;
+      const renderW =
+        dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight;
 
       const newSelection = select(ref.current)
         .classed("svg-container", true)
@@ -124,14 +127,8 @@ const HorizontalBars = () => {
         .attr("viewBox", `0 0 ${renderW} ${renderH}`)
         .classed("svg-content", true);
 
-      // update selection and dimensions
+      // update selection
       setSelection(newSelection);
-      setDimensions({
-        chartHeight: renderH,
-        chartWidth: renderW - renderMarginL - renderMarginR,
-        marginLeft: renderMarginL,
-        marginRight: renderMarginR,
-      });
     } else {
       // Position the x-axises
       data.map((d, i) =>
@@ -140,7 +137,7 @@ const HorizontalBars = () => {
           .attr(
             "transform",
             `translate(${dimensions.marginLeft}, ${
-              y.call(y, d.name)! + y.bandwidth() * 1.05
+              y().call(y, d.name)! + y().bandwidth() * 1.05
             })`
           )
           .call(xAxises()[i])
@@ -157,9 +154,9 @@ const HorizontalBars = () => {
         .attr("transform", (d) => {
           return `translate(${
             dimensions.marginLeft + dimensions.chartWidth + 10
-          }, ${y(d.name)! + y.bandwidth() / 2})`;
+          }, ${y()(d.name)! + y().bandwidth() / 2})`;
         })
-        .text((d) => `${d.name}(${d.direction})`)
+        .text((d) => `${d.name} ${d.direction === -1 ? "⬆️" : "⬇️"}`)
         .attr("font-size", 18)
         .attr("font-weight", "bold");
 
@@ -168,19 +165,19 @@ const HorizontalBars = () => {
         .append("rect")
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return xs()[i](d.value);
           } else {
             return xs_rev()[i](d.value);
           }
         })
         .attr("y", (d) => {
-          return y(d.name)!;
+          return y()(d.name)!;
         })
         .attr("x", 0)
-        .attr("height", y.bandwidth)
+        .attr("height", y().bandwidth)
         .attr("fill", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return "green";
           } else {
             return "red";
@@ -192,60 +189,70 @@ const HorizontalBars = () => {
         .append("rect")
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return dimensions.chartWidth - xs()[i](d.value);
           } else {
             return dimensions.chartWidth - xs_rev()[i](d.value);
           }
         })
         .attr("y", (d) => {
-          return y(d.name)!;
+          return y()(d.name)!;
         })
         .attr("x", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return xs()[i](d.value);
           } else {
             return xs_rev()[i](d.value);
           }
         })
-        .attr("height", y.bandwidth)
+        .attr("height", y().bandwidth)
         .attr("fill", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return "red";
           } else {
             return "green";
           }
         });
 
-      // draw a transparent overlay on top of each bar to work as an event detector
-      enter
-        .append("rect")
-        .attr("class", "preferencePointerOverlay")
-        .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
-        .attr("width", dimensions.chartWidth)
-        .attr("y", (d) => {
-          return y(d.name)!;
-        })
-        .attr("x", 0)
-        .attr("height", y.bandwidth)
-        .attr("fill", "yellow")
-        .attr("opacity", 0.0);
-
-      // draw the preference pointers on each bar on top of the event overlay
+      // draw the info pointers on each bar on top of the event overlay
       enter
         .append("line")
-        .attr("class", "preferencePointer")
-        .attr("y1", (d) => y(d.name)!)
-        .attr("y2", (d) => y(d.name)! + y.bandwidth())
+        .attr("class", "infoPointer")
+        .attr("y1", (d) => y()(d.name)!)
+        .attr("y2", (d) => y()(d.name)! + y().bandwidth())
         .attr("x1", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return xs()[i](d.value) + dimensions.marginLeft;
           } else {
             return xs_rev()[i](d.value) + dimensions.marginLeft;
           }
         })
         .attr("x2", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
+            return xs()[i](d.value) + dimensions.marginLeft;
+          } else {
+            return xs_rev()[i](d.value) + dimensions.marginLeft;
+          }
+        })
+        .attr("stroke-width", 2)
+        .attr("stroke", "grey")
+        .attr("fill", "none");
+
+      // draw the preference pointers on each bar on top of the event overlay
+      enter
+        .append("line")
+        .attr("class", "preferencePointer")
+        .attr("y1", (d) => y()(d.name)!)
+        .attr("y2", (d) => y()(d.name)! + y().bandwidth())
+        .attr("x1", (d, i) => {
+          if (d.direction === -1) {
+            return xs()[i](d.value) + dimensions.marginLeft;
+          } else {
+            return xs_rev()[i](d.value) + dimensions.marginLeft;
+          }
+        })
+        .attr("x2", (d, i) => {
+          if (d.direction === -1) {
             return xs()[i](d.value) + dimensions.marginLeft;
           } else {
             return xs_rev()[i](d.value) + dimensions.marginLeft;
@@ -254,8 +261,49 @@ const HorizontalBars = () => {
         .attr("stroke-width", 3)
         .attr("stroke", "black")
         .attr("fill", "none");
+
+      enter
+        .append("text")
+        .attr("class", "infoLabel")
+        .attr("fill", "black")
+        .attr("text-anchor", (d, i) => {
+          const midPoints = xs().map((x, _) => {
+            return (x.domain()[0] + x.domain()[1]) / 2;
+          });
+          if (d.value >= midPoints[i]) {
+            return "end";
+          } else {
+            return "start";
+          }
+        })
+        .attr("transform", (d, i) => {
+          return `translate(${
+            d.direction === -1
+              ? xs()[i](d.value) + dimensions.marginLeft
+              : xs_rev()[i](d.value) + dimensions.marginLeft
+          }, ${y()(d.name)! + y().bandwidth() / 2})`;
+        })
+        .text(
+          (d) => `${d.name}: ${d.value} ${d.direction === -1 ? "⬆️" : "⬇️"}`
+        )
+        .attr("font-size", 14)
+        .attr("font-weight", "light");
+
+      // draw a transparent overlay on top of each bar to work as an event detector
+      enter
+        .append("rect")
+        .attr("class", "preferencePointerOverlay")
+        .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
+        .attr("width", dimensions.chartWidth)
+        .attr("y", (d) => {
+          return y()(d.name)!;
+        })
+        .attr("x", 0)
+        .attr("height", y().bandwidth)
+        .attr("fill", "yellow")
+        .attr("opacity", 0.0);
     }
-  }, [selection, data, xs, xs_rev, xAxises, dimensions]);
+  }, [selection, data, xs, xs_rev, y, xAxises, dimensions]);
 
   /* We need an useEffect to watch for changes in the preference pointer values and update not
    *  just the location of the pointers, but also the event handlers on the overlay.
@@ -270,22 +318,71 @@ const HorizontalBars = () => {
       // update the x location of the preference pointer according to the state of prefPointerLocs
       enterPointer
         .transition()
-        .duration(300)
+        .duration(100)
         .ease(easeCubic)
         .attr("x1", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return xs()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           } else {
             return xs_rev()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           }
         })
         .attr("x2", (d, i) => {
-          if (d.direction === "max") {
+          if (d.direction === -1) {
             return xs()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           } else {
             return xs_rev()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           }
         });
+
+      // select the info pointers
+      const enterInfoPtr = selection.selectAll(".infoPointer").data(data);
+
+      // update the x location of the info pointer according to the state of infoPointerLocs
+      enterInfoPtr
+        .attr("x1", (d, i) => {
+          if (d.direction === -1) {
+            return xs()[i](infoPointerLocs[i]) + dimensions.marginLeft;
+          } else {
+            return xs_rev()[i](infoPointerLocs[i]) + dimensions.marginLeft;
+          }
+        })
+        .attr("x2", (d, i) => {
+          if (d.direction === -1) {
+            return xs()[i](infoPointerLocs[i]) + dimensions.marginLeft;
+          } else {
+            return xs_rev()[i](infoPointerLocs[i]) + dimensions.marginLeft;
+          }
+        });
+
+      // select the info labels
+      const enterInfoLabels = selection.selectAll(".infoLabel").data(data);
+
+      // update the x location of the info labels according to the state of infoPointerLocs
+      enterInfoLabels
+        .attr("transform", (d, i) => {
+          return `translate(${
+            d.direction === -1
+              ? xs()[i](infoPointerLocs[i]) + dimensions.marginLeft
+              : xs_rev()[i](infoPointerLocs[i]) + dimensions.marginLeft
+          }, ${y()(d.name)! + y().bandwidth() / 2})`;
+        })
+        .attr("text-anchor", (_, i) => {
+          const midPoints = xs().map((x, _) => {
+            return (x.domain()[0] + x.domain()[1]) / 2;
+          });
+          if (infoPointerLocs[i] >= midPoints[i]) {
+            return "end";
+          } else {
+            return "start";
+          }
+        })
+        .text(
+          (d, i) =>
+            `${d.name}: ${infoPointerLocs[i].toExponential(2)} ${
+              d.direction === -1 ? "⬆️" : "⬇️"
+            }`
+        );
 
       // select the event detection overlay, this needs to be updated because the first useEffect
       // does not have access to the updated state of preferencePointerLocs
@@ -295,7 +392,7 @@ const HorizontalBars = () => {
 
       enterOverlay.on("click", (event, d) => {
         const match_index = data.findIndex((datum) => datum.name === d.name);
-        const prefValue = (d.direction === "max"
+        const prefValue = (d.direction === -1
           ? xs()[match_index]
           : xs_rev()[match_index]
         ).invert(pointer(event)[0]);
@@ -303,9 +400,37 @@ const HorizontalBars = () => {
         const newLocs = prefPointerLocs.map((loc) => loc);
         newLocs[match_index] = prefValue;
         setPrefPointerLocs(newLocs.map((loc) => loc));
+        setReferencePoint(newLocs.map((loc) => loc));
+      });
+
+      enterOverlay.on("mousemove", (event, d) => {
+        const match_index = data.findIndex((datum) => datum.name === d.name);
+        const prefValue = (d.direction === -1
+          ? xs()[match_index]
+          : xs_rev()[match_index]
+        ).invert(pointer(event)[0]);
+        // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
+        const newLocs = infoPointerLocs.map((loc) => loc);
+        newLocs[match_index] = prefValue;
+        setInfoPointerLocs(newLocs.map((loc) => loc));
+      });
+
+      enterOverlay.on("mouseleave", (event, d) => {
+        setInfoPointerLocs(prefPointerLocs);
       });
     }
-  }, [selection, prefPointerLocs, data, xs, xs_rev, xAxises, dimensions]);
+  }, [
+    selection,
+    prefPointerLocs,
+    infoPointerLocs,
+    data,
+    y,
+    xs,
+    xs_rev,
+    xAxises,
+    dimensions,
+    setReferencePoint,
+  ]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
