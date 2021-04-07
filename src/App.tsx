@@ -1,8 +1,14 @@
 import React from "react";
-import HorizontalBars from "./components/VerticalBars";
+import HorizontalBars from "./components/HorizontalBars";
 
 function App() {
-  return <HorizontalBars></HorizontalBars>;
+  return (
+    <>
+      <div style={{ width: "600px", height: "400px" }}>
+        <HorizontalBars></HorizontalBars>
+      </div>
+    </>
+  );
 }
 
 export default App;

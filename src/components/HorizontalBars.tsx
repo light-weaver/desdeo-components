@@ -1,9 +1,10 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
 import { scaleLinear, scaleBand } from "d3-scale";
 import { axisBottom } from "d3-axis";
 import "d3-transition";
 import { easeCubic } from "d3-ease";
+import "./Svg.css";
 
 const initialData = [
   {
@@ -38,15 +39,6 @@ const initialData = [
   },
 ];
 
-const dimensions = {
-  width: 900,
-  height: 600,
-  marginLeft: 100,
-  marginRight: 100,
-  chartHeight: 500,
-  chartWidth: 500,
-};
-
 const ideal = [25, 0.95, -871, 150000, 300];
 const nadir = [101, 0.11, 801, 520, 100];
 
@@ -59,9 +51,10 @@ const HorizontalBars = () => {
   - data is used to refer to the data being displayed
   - prefPointLocs refers to the locations of the pointers indicating preference on each horizontal bar
    */
-  const ref = useRef<SVGSVGElement | null>(null);
+  const ref = useRef(null);
+  // SetStateAction<Selection<SVGSVGElement, unknown, HTMLElement, any> | null>
   const [selection, setSelection] = useState<null | Selection<
-    SVGSVGElement | null,
+    SVGSVGElement,
     unknown,
     null,
     undefined
@@ -70,35 +63,41 @@ const HorizontalBars = () => {
   const [prefPointerLocs, setPrefPointerLocs] = useState(
     data.map((d) => d.value)
   );
+  const [dimensions, setDimensions] = useState({
+    marginLeft: 100,
+    marginRight: 100,
+    chartHeight: 500,
+    chartWidth: 500,
+  });
 
   // create an array of linear scales to scale each objective being maximized
-  const [xs] = useState(
-    data.map((d, i) => {
+  const xs = useCallback(() => {
+    return data.map((d, i) => {
       return scaleLinear()
         .domain([nadir[i], ideal[i]])
         .range([0, dimensions.chartWidth]);
-    })
-  );
+    });
+  }, [dimensions, data]);
 
   // create also an array of reverse scales to be used when minimizing
-  const [xs_rev] = useState(
-    data.map((d, i) => {
+  const xs_rev = useCallback(() => {
+    return data.map((d, i) => {
       return scaleLinear()
         .domain([ideal[i], nadir[i]])
         .range([0, dimensions.chartWidth]);
-    })
-  );
+    });
+  }, [dimensions, data]);
 
-  // create an array of bottom axised to work as the individual x-axis for each bar
-  const [xAxises] = useState(
-    data.map((d, i) => {
+  // create an array of bottom axises to work as the individual x-axis for each bar
+  const xAxises = useCallback(() => {
+    return data.map((d, i) => {
       if (d.direction === "max") {
-        return axisBottom(xs[i]);
+        return axisBottom(xs()[i]);
       } else {
-        return axisBottom(xs_rev[i]);
+        return axisBottom(xs_rev()[i]);
       }
-    })
-  );
+    });
+  }, [data, xs, xs_rev]);
 
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
@@ -111,7 +110,28 @@ const HorizontalBars = () => {
       .padding(0.35);
 
     if (!selection) {
-      setSelection(select(ref.current));
+      // add svg and update selection
+      const renderH = 600;
+      const renderW = 1000;
+      const renderMarginL = 0.1 * renderW;
+      const renderMarginR = 0.2 * renderW;
+
+      const newSelection = select(ref.current)
+        .classed("svg-container", true)
+        .append("svg")
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr("viewBox", `0 0 ${renderW} ${renderH}`)
+        .attr("viewBox", `0 0 ${renderW} ${renderH}`)
+        .classed("svg-content", true);
+
+      // update selection and dimensions
+      setSelection(newSelection);
+      setDimensions({
+        chartHeight: renderH,
+        chartWidth: renderW - renderMarginL - renderMarginR,
+        marginLeft: renderMarginL,
+        marginRight: renderMarginR,
+      });
     } else {
       // Position the x-axises
       data.map((d, i) =>
@@ -123,7 +143,7 @@ const HorizontalBars = () => {
               y.call(y, d.name)! + y.bandwidth() * 1.05
             })`
           )
-          .call(xAxises[i])
+          .call(xAxises()[i])
       );
 
       // enter selection, append to this
@@ -149,9 +169,9 @@ const HorizontalBars = () => {
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](d.value);
+            return xs()[i](d.value);
           } else {
-            return xs_rev[i](d.value);
+            return xs_rev()[i](d.value);
           }
         })
         .attr("y", (d) => {
@@ -173,9 +193,9 @@ const HorizontalBars = () => {
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
           if (d.direction === "max") {
-            return dimensions.chartWidth - xs[i](d.value);
+            return dimensions.chartWidth - xs()[i](d.value);
           } else {
-            return dimensions.chartWidth - xs_rev[i](d.value);
+            return dimensions.chartWidth - xs_rev()[i](d.value);
           }
         })
         .attr("y", (d) => {
@@ -183,9 +203,9 @@ const HorizontalBars = () => {
         })
         .attr("x", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](d.value);
+            return xs()[i](d.value);
           } else {
-            return xs_rev[i](d.value);
+            return xs_rev()[i](d.value);
           }
         })
         .attr("height", y.bandwidth)
@@ -219,23 +239,23 @@ const HorizontalBars = () => {
         .attr("y2", (d) => y(d.name)! + y.bandwidth())
         .attr("x1", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](d.value) + dimensions.marginLeft;
+            return xs()[i](d.value) + dimensions.marginLeft;
           } else {
-            return xs_rev[i](d.value) + dimensions.marginLeft;
+            return xs_rev()[i](d.value) + dimensions.marginLeft;
           }
         })
         .attr("x2", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](d.value) + dimensions.marginLeft;
+            return xs()[i](d.value) + dimensions.marginLeft;
           } else {
-            return xs_rev[i](d.value) + dimensions.marginLeft;
+            return xs_rev()[i](d.value) + dimensions.marginLeft;
           }
         })
         .attr("stroke-width", 3)
         .attr("stroke", "black")
         .attr("fill", "none");
     }
-  }, [selection, data, xs, xs_rev, xAxises]);
+  }, [selection, data, xs, xs_rev, xAxises, dimensions]);
 
   /* We need an useEffect to watch for changes in the preference pointer values and update not
    *  just the location of the pointers, but also the event handlers on the overlay.
@@ -254,16 +274,16 @@ const HorizontalBars = () => {
         .ease(easeCubic)
         .attr("x1", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](prefPointerLocs[i]) + dimensions.marginLeft;
+            return xs()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           } else {
-            return xs_rev[i](prefPointerLocs[i]) + dimensions.marginLeft;
+            return xs_rev()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           }
         })
         .attr("x2", (d, i) => {
           if (d.direction === "max") {
-            return xs[i](prefPointerLocs[i]) + dimensions.marginLeft;
+            return xs()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           } else {
-            return xs_rev[i](prefPointerLocs[i]) + dimensions.marginLeft;
+            return xs_rev()[i](prefPointerLocs[i]) + dimensions.marginLeft;
           }
         });
 
@@ -276,8 +296,8 @@ const HorizontalBars = () => {
       enterOverlay.on("click", (event, d) => {
         const match_index = data.findIndex((datum) => datum.name === d.name);
         const prefValue = (d.direction === "max"
-          ? xs[match_index]
-          : xs_rev[match_index]
+          ? xs()[match_index]
+          : xs_rev()[match_index]
         ).invert(pointer(event)[0]);
         // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
         const newLocs = prefPointerLocs.map((loc) => loc);
@@ -285,18 +305,9 @@ const HorizontalBars = () => {
         setPrefPointerLocs(newLocs.map((loc) => loc));
       });
     }
-  }, [selection, prefPointerLocs, data, xs, xs_rev, xAxises]);
+  }, [selection, prefPointerLocs, data, xs, xs_rev, xAxises, dimensions]);
 
-  return (
-    <div className="vertical-bars-component">
-      <svg ref={ref} width={dimensions.width} height={dimensions.height}></svg>
-      <ul>
-        {prefPointerLocs.map((d, i) => (
-          <li key={i}>{`${data[i].name}(${data[i].direction}) = ${d}`}</li>
-        ))}
-      </ul>
-    </div>
-  );
+  return <div ref={ref} id="container" className="svg-container"></div>;
 };
 
 export default HorizontalBars;
