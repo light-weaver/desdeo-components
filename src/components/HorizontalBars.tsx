@@ -6,13 +6,7 @@ import "d3-transition";
 import { easeCubic } from "d3-ease";
 import "./Svg.css";
 import { ObjectiveData } from "../types/ProblemTypes";
-
-interface RectDimensions {
-  chartWidth: number;
-  chartHeight: number;
-  marginLeft: number;
-  marginRight: number;
-}
+import { RectDimensions } from "../types/ComponentTypes";
 
 interface HorizontalBarsProps {
   objectiveData: ObjectiveData;
@@ -22,10 +16,12 @@ interface HorizontalBarsProps {
   dimensionsMaybe?: RectDimensions;
 }
 const defaultDimensions = {
-  marginLeft: 80,
-  marginRight: 160,
   chartHeight: 600,
   chartWidth: 800,
+  marginLeft: 80,
+  marginRight: 160,
+  marginTop: 0,
+  marginBottom: 0,
 };
 
 // Change me: add arg for reference point and use objective data just to set up.
