@@ -12,11 +12,16 @@ export default {
 };
 
 const Template: Story<ComponentProps<typeof HorizontalBars>> = (args) => {
-  const [ref, setRef] = useState([1, 2, 3]);
+  const [ref, setRef] = useState(args.referencePoint);
   args.setReferencePoint = setRef;
+  args.referencePoint = ref;
+  args.currentPoint = ref;
 
   return (
     <div>
+      <div style={{ width: "800px" }}>
+        <HorizontalBars {...args} />
+      </div>
       <div style={{ width: "800px" }}>
         <HorizontalBars {...args} />
       </div>
@@ -30,12 +35,19 @@ const Template: Story<ComponentProps<typeof HorizontalBars>> = (args) => {
 };
 
 export const FiveObjectives = Template.bind({});
-FiveObjectives.args = { objectiveData: exampleDataSingle5Objectives };
+FiveObjectives.args = {
+  objectiveData: exampleDataSingle5Objectives,
+  referencePoint: exampleDataSingle5Objectives.values[0].value,
+};
 
 export const FiveObjectivesSmall = Template.bind({});
 FiveObjectivesSmall.args = {
   objectiveData: exampleDataSingle5Objectives,
+  referencePoint: exampleDataSingle5Objectives.values[0].value,
 };
 
 export const ThreeObjectives = Template.bind({});
-ThreeObjectives.args = { objectiveData: exampleDataSingle3Objectives };
+ThreeObjectives.args = {
+  objectiveData: exampleDataSingle3Objectives,
+  referencePoint: exampleDataSingle3Objectives.values[0].value,
+};

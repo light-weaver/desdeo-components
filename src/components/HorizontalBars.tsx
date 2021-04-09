@@ -17,6 +17,8 @@ interface RectDimensions {
 interface HorizontalBarsProps {
   objectiveData: ObjectiveData;
   setReferencePoint: React.Dispatch<React.SetStateAction<number[]>>;
+  referencePoint: number[];
+  currentPoint: number[];
   dimensionsMaybe?: RectDimensions;
 }
 const defaultDimensions = {
@@ -26,9 +28,12 @@ const defaultDimensions = {
   chartWidth: 800,
 };
 
+// Change me: add arg for reference point and use objective data just to set up.
 const HorizontalBars = ({
   objectiveData,
   setReferencePoint,
+  referencePoint,
+  currentPoint,
   dimensionsMaybe,
 }: HorizontalBarsProps) => {
   /* 
@@ -65,13 +70,23 @@ const HorizontalBars = ({
   const [infoPointerLocs, setInfoPointerLocs] = useState(
     data.map((d) => d.value)
   );
+  const [posNegMiddle, setPosNegMiddle] = useState(currentPoint);
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe! : defaultDimensions
   );
 
+  useEffect(() => {
+    setPrefPointerLocs(referencePoint);
+    setInfoPointerLocs(referencePoint);
+  }, [referencePoint]);
+
+  useEffect(() => {
+    setPosNegMiddle(currentPoint);
+  }, [currentPoint]);
+
   // create an array of linear scales to scale each objective being maximized
   const xs = useCallback(() => {
-    return data.map((d, i) => {
+    return data.map((_, i) => {
       return scaleLinear()
         .domain([nadir[i], ideal[i]])
         .range([0, dimensions.chartWidth]);
@@ -80,7 +95,7 @@ const HorizontalBars = ({
 
   // create also an array of reverse scales to be used when minimizing
   const xs_rev = useCallback(() => {
-    return data.map((d, i) => {
+    return data.map((_, i) => {
       return scaleLinear()
         .domain([ideal[i], nadir[i]])
         .range([0, dimensions.chartWidth]);
@@ -111,8 +126,6 @@ const HorizontalBars = ({
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
     // create a discrete band to position each of the horizontal bars
-    // this has to be created in the effect because it's type cannot be coerced as of yet
-    // (may in a future version of d3)
     if (!selection) {
       // add svg and update selection
       const renderH = dimensions.chartHeight;
@@ -130,6 +143,10 @@ const HorizontalBars = ({
       // update selection
       setSelection(newSelection);
     } else {
+      // clear the svg of its children
+      console.log("svg clear!");
+      selection.selectAll("*").remove();
+
       // Position the x-axises
       data.map((d, i) =>
         selection
@@ -163,6 +180,7 @@ const HorizontalBars = ({
       // draw the positive space for max problems and negative space for min problems
       enter
         .append("rect")
+        .attr("class", "posMaxNegMin")
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
           if (d.direction === -1) {
@@ -176,7 +194,7 @@ const HorizontalBars = ({
         })
         .attr("x", 0)
         .attr("height", y().bandwidth)
-        .attr("fill", (d, i) => {
+        .attr("fill", (d) => {
           if (d.direction === -1) {
             return "green";
           } else {
@@ -187,6 +205,7 @@ const HorizontalBars = ({
       // draw the positive space for min problems and the negative space for pos problems
       enter
         .append("rect")
+        .attr("class", "negMaxPosMin")
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", (d, i) => {
           if (d.direction === -1) {
@@ -206,7 +225,7 @@ const HorizontalBars = ({
           }
         })
         .attr("height", y().bandwidth)
-        .attr("fill", (d, i) => {
+        .attr("fill", (d) => {
           if (d.direction === -1) {
             return "red";
           } else {
@@ -304,6 +323,40 @@ const HorizontalBars = ({
         .attr("opacity", 0.0);
     }
   }, [selection, data, xs, xs_rev, y, xAxises, dimensions]);
+
+  // update the negative and positive spaces when the current solution is updated
+  useEffect(() => {
+    if (!selection) {
+      return;
+    }
+    const enterPosMaxNegMin = selection.selectAll(".posMaxNegMin").data(data);
+    // update the positive space for max problems and negative space for min problems
+    enterPosMaxNegMin.attr("width", (d, i) => {
+      if (d.direction === -1) {
+        return xs()[i](posNegMiddle[i]);
+      } else {
+        return xs_rev()[i](posNegMiddle[i]);
+      }
+    });
+
+    const enterNegMaxPosMin = selection.selectAll(".negMaxPosMin").data(data);
+    // draw the positive space for min problems and the negative space for pos problems
+    enterNegMaxPosMin
+      .attr("width", (d, i) => {
+        if (d.direction === -1) {
+          return dimensions.chartWidth - xs()[i](posNegMiddle[i]);
+        } else {
+          return dimensions.chartWidth - xs_rev()[i](posNegMiddle[i]);
+        }
+      })
+      .attr("x", (d, i) => {
+        if (d.direction === -1) {
+          return xs()[i](posNegMiddle[i]);
+        } else {
+          return xs_rev()[i](posNegMiddle[i]);
+        }
+      });
+  }, [data, posNegMiddle, dimensions]);
 
   /* We need an useEffect to watch for changes in the preference pointer values and update not
    *  just the location of the pointers, but also the event handlers on the overlay.
@@ -415,7 +468,7 @@ const HorizontalBars = ({
         setInfoPointerLocs(newLocs.map((loc) => loc));
       });
 
-      enterOverlay.on("mouseleave", (event, d) => {
+      enterOverlay.on("mouseleave", () => {
         setInfoPointerLocs(prefPointerLocs);
       });
     }

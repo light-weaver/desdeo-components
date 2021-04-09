@@ -1,4 +1,4 @@
-import React from "react";
+// import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
 import { exampleDataSingle5Objectives } from "./data/ExampleData";
 import { useState, useEffect } from "react";
@@ -16,6 +16,8 @@ function App() {
         <HorizontalBars
           objectiveData={exampleDataSingle5Objectives}
           setReferencePoint={setRefPoint}
+          referencePoint={exampleDataSingle5Objectives.values[0].value}
+          currentPoint={refPoint}
         ></HorizontalBars>
       </div>
     </>
