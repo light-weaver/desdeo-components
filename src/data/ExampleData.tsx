@@ -33,16 +33,16 @@ export const exampleDataTen4Objectives: ObjectiveData = {
   nadir: [101, 0.11, 801, 0],
   values: [
     {
-      selected: false,
+      selected: true,
       value: [50, 0.2, -500, 1],
     },
     {
       selected: false,
-      value: [20, 0.9, -300, 2],
+      value: [28, 0.9, -300, 2],
     },
     {
       selected: false,
-      value: [90, 0.01, -800, 3],
+      value: [90, 0.13, -800, 3],
     },
     {
       selected: false,
