@@ -10,7 +10,9 @@ import { RectDimensions } from "../types/ComponentTypes";
 
 interface HorizontalBarsProps {
   objectiveData: ObjectiveData;
-  setReferencePoint: React.Dispatch<React.SetStateAction<number[]>>;
+  setReferencePoint:
+    | React.Dispatch<React.SetStateAction<number[]>>
+    | ((x: number[]) => void);
   referencePoint: number[];
   currentPoint: number[];
   dimensionsMaybe?: RectDimensions;
