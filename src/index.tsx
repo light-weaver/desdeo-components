@@ -18,3 +18,4 @@ reportWebVitals();
 */
 
 export { default as HorizontalBars } from "./components/HorizontalBars";
+export { default as ParallelAxes } from "./components/ParallelAxes";

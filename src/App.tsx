@@ -1,24 +1,37 @@
 // import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
-import { exampleDataSingle5Objectives } from "./data/ExampleData";
+import ParallelAxes from "./components/ParallelAxes";
+import { exampleDataTen4Objectives } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
 function App() {
-  const [refPoint, setRefPoint] = useState([1, 2, 3]);
+  const [selected, setSelected] = useState<number[]>([]);
+
+  const handleSelection = (index: number) => {
+    if (selected.includes(index)) {
+      return;
+    }
+    if (selected.length < 2) {
+      setSelected([...selected, index]);
+      return;
+    }
+
+    const tmp = selected;
+    tmp.shift();
+    setSelected([...tmp, index]);
+  };
 
   useEffect(() => {
-    console.log(refPoint);
-  }, [refPoint]);
-
+    console.log(selected);
+  }, [selected]);
   return (
     <>
       <div style={{ width: "800px", float: "left" }}>
-        <HorizontalBars
-          objectiveData={exampleDataSingle5Objectives}
-          setReferencePoint={setRefPoint}
-          referencePoint={exampleDataSingle5Objectives.values[0].value}
-          currentPoint={refPoint}
-        ></HorizontalBars>
+        <ParallelAxes
+          objectiveData={exampleDataTen4Objectives}
+          selectedIndices={selected}
+          handleSelection={handleSelection}
+        />
       </div>
     </>
   );

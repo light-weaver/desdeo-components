@@ -8,10 +8,13 @@ import { easeCubic } from "d3-ease";
 import "./Svg.css";
 import { ObjectiveData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
+import { filter } from "d3-array";
 
 interface ParallelAxesProps {
   objectiveData: ObjectiveData;
   dimensionsMaybe?: RectDimensions;
+  selectedIndices: number[];
+  handleSelection: (x: number) => void;
 }
 
 const defaultDimensions = {
@@ -26,6 +29,8 @@ const defaultDimensions = {
 const ParallelAxes = ({
   objectiveData,
   dimensionsMaybe,
+  selectedIndices,
+  handleSelection,
 }: ParallelAxesProps) => {
   const ref = useRef(null);
   const [selection, setSelection] = useState<null | Selection<
@@ -38,7 +43,6 @@ const ParallelAxes = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
   const [data] = useState(objectiveData); // if changes, the whole graph is re-rendered
-  const [selectedData, SetSelectedData] = useState(objectiveData.values); // keeps track of selected
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
 
   // create an array of linear scales to scale each objective
@@ -104,6 +108,14 @@ const ParallelAxes = ({
           })`
         )
         .call(yAxixes()[i])
+        .append("text")
+        .style("text-anchor", "middle")
+        .attr("y", -9)
+        .attr("font-size", 18)
+        .text(
+          () => `${data.names[i]} (${data.directions[i] === 1 ? "min" : "max"})`
+        )
+        .style("fill", "black")
     );
 
     // create lines data
@@ -161,11 +173,11 @@ const ParallelAxes = ({
         SetHoverTarget(-1);
       })
       .on("click", (_, datum) => {
-        const newData = selectedData;
-        newData[datum.index].selected = !newData[datum.index].selected;
-        SetSelectedData([...newData]); // hooks are stupid, they don't notice if attributes of an object have changed, this is why they must be destructed like this when setting them
+        //const newData = selectedIndices.map((_, i) => data.values[i]);
+        //newData[datum.index].selected = !newData[datum.index].selected;
+        handleSelection(datum.index);
       });
-  }, [selection, dimensions, data]);
+  }, [selection, dimensions, data, selectedIndices]);
 
   useEffect(() => {
     if (!selection) {
@@ -175,9 +187,9 @@ const ParallelAxes = ({
     // highlight selected
     const highlightSelect = selection
       .selectAll(".visualPath")
-      .data(selectedData)
-      .filter((d, _) => {
-        return d.selected;
+      .data(data.values)
+      .filter((_, i) => {
+        return selectedIndices.includes(i);
       });
 
     // selection from filter is not empty
@@ -188,16 +200,19 @@ const ParallelAxes = ({
     // dim not selected
     const dimSelection = selection
       .selectAll(".visualPath")
-      .data(selectedData)
-      .filter((d, _) => {
-        return !d.selected;
+      .data(data.values)
+      .filter((_, i) => {
+        return !selectedIndices.includes(i);
       });
+    //  .filter((d, _) => {
+    //   return !d.selected;
+    //});
 
     // selection from filter is not empty
     if (!dimSelection.empty()) {
       dimSelection.attr("stroke-width", 1).attr("stroke", "#69b3a2");
     }
-  }, [selectedData, selection]);
+  }, [selectedIndices, selection]);
 
   useEffect(() => {
     if (!selection) {
@@ -208,9 +223,9 @@ const ParallelAxes = ({
     if (hoverTarget === -1) {
       const resetSelection = selection
         .selectAll(".visualPath")
-        .data(selectedData)
-        .filter((d, _) => {
-          return !d.selected;
+        .data(data.values)
+        .filter((_, i) => {
+          return !selectedIndices.includes(i);
         });
 
       // check not empty
@@ -224,16 +239,16 @@ const ParallelAxes = ({
     // darken hover target
     const hoverSelection = selection
       .selectAll(".visualPath")
-      .data(selectedData)
-      .filter((d, i) => {
-        return i === hoverTarget && !d.selected;
+      .data(data.values)
+      .filter((_, i) => {
+        return i === hoverTarget && !selectedIndices.includes(i);
       });
 
     // check not empty
     if (!hoverSelection.empty()) {
       hoverSelection.attr("stroke-width", 2).attr("stroke", "pink");
     }
-  }, [hoverTarget, selection, selectedData]);
+  }, [hoverTarget, selection, selectedIndices]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
