@@ -9,12 +9,13 @@ import "./Svg.css";
 import { ObjectiveData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 import { filter } from "d3-array";
+import { active } from "d3-transition";
 
 interface ParallelAxesProps {
   objectiveData: ObjectiveData;
   dimensionsMaybe?: RectDimensions;
   selectedIndices: number[];
-  handleSelection: (x: number) => void;
+  handleSelection: (x: number[]) => void;
 }
 
 const defaultDimensions = {
@@ -44,6 +45,7 @@ const ParallelAxes = ({
   );
   const [data] = useState(objectiveData); // if changes, the whole graph is re-rendered
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
+  const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
 
   // create an array of linear scales to scale each objective
   const ys = useCallback(() => {
@@ -71,6 +73,10 @@ const ParallelAxes = ({
       return axisLeft(ys()[i]);
     });
   }, [data, ys]);
+
+  useEffect(() => {
+    handleSelection(activeIndices);
+  }, [activeIndices]);
 
   useEffect(() => {
     // create a discrete band to position each of the horizontal bars
@@ -175,9 +181,16 @@ const ParallelAxes = ({
       .on("click", (_, datum) => {
         //const newData = selectedIndices.map((_, i) => data.values[i]);
         //newData[datum.index].selected = !newData[datum.index].selected;
-        handleSelection(datum.index);
+        if (activeIndices.includes(datum.index)) {
+          // remove the index
+          const tmp = activeIndices.filter((i) => i !== datum.index);
+          SetActiveIndices(tmp);
+          return;
+        }
+        const tmp = activeIndices;
+        SetActiveIndices(tmp.concat(datum.index));
       });
-  }, [selection, dimensions, data, selectedIndices]);
+  }, [selection, dimensions, data, activeIndices]);
 
   useEffect(() => {
     if (!selection) {
@@ -189,7 +202,7 @@ const ParallelAxes = ({
       .selectAll(".visualPath")
       .data(data.values)
       .filter((_, i) => {
-        return selectedIndices.includes(i);
+        return activeIndices.includes(i);
       });
 
     // selection from filter is not empty
@@ -202,7 +215,7 @@ const ParallelAxes = ({
       .selectAll(".visualPath")
       .data(data.values)
       .filter((_, i) => {
-        return !selectedIndices.includes(i);
+        return !activeIndices.includes(i);
       });
     //  .filter((d, _) => {
     //   return !d.selected;
@@ -212,7 +225,7 @@ const ParallelAxes = ({
     if (!dimSelection.empty()) {
       dimSelection.attr("stroke-width", 1).attr("stroke", "#69b3a2");
     }
-  }, [selectedIndices, selection]);
+  }, [activeIndices, selection]);
 
   useEffect(() => {
     if (!selection) {
@@ -225,7 +238,7 @@ const ParallelAxes = ({
         .selectAll(".visualPath")
         .data(data.values)
         .filter((_, i) => {
-          return !selectedIndices.includes(i);
+          return !activeIndices.includes(i);
         });
 
       // check not empty
@@ -241,14 +254,14 @@ const ParallelAxes = ({
       .selectAll(".visualPath")
       .data(data.values)
       .filter((_, i) => {
-        return i === hoverTarget && !selectedIndices.includes(i);
+        return i === hoverTarget && !activeIndices.includes(i);
       });
 
     // check not empty
     if (!hoverSelection.empty()) {
       hoverSelection.attr("stroke-width", 2).attr("stroke", "pink");
     }
-  }, [hoverTarget, selection, selectedIndices]);
+  }, [hoverTarget, selection, activeIndices]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };

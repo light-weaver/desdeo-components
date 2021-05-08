@@ -22,5 +22,5 @@ export const FourObjectives = Template.bind({});
 FourObjectives.args = {
   objectiveData: exampleDataTen4Objectives,
   selectedIndices: [0, 1],
-  handleSelection: (x: number) => console.log(x),
+  handleSelection: (x: number[]) => console.log(x),
 };
