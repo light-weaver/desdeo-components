@@ -20,6 +20,13 @@ function App() {
           handleSelection={setSelected}
         />
       </div>
+      <div style={{ width: "800px", float: "left" }}>
+        <ParallelAxes
+          objectiveData={exampleDataTen4Objectives}
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
     </>
   );
 }

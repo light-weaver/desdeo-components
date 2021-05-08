@@ -47,6 +47,10 @@ const ParallelAxes = ({
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
   const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
 
+  useEffect(() => {
+    SetActiveIndices(selectedIndices);
+  }, [selectedIndices]);
+
   // create an array of linear scales to scale each objective
   const ys = useCallback(() => {
     return data.ideal.map((_, i) => {
@@ -73,10 +77,6 @@ const ParallelAxes = ({
       return axisLeft(ys()[i]);
     });
   }, [data, ys]);
-
-  useEffect(() => {
-    handleSelection(activeIndices);
-  }, [activeIndices]);
 
   useEffect(() => {
     // create a discrete band to position each of the horizontal bars
@@ -184,11 +184,11 @@ const ParallelAxes = ({
         if (activeIndices.includes(datum.index)) {
           // remove the index
           const tmp = activeIndices.filter((i) => i !== datum.index);
-          SetActiveIndices(tmp);
+          handleSelection(tmp);
           return;
         }
-        const tmp = activeIndices;
-        SetActiveIndices(tmp.concat(datum.index));
+        const tmp = activeIndices.concat(datum.index);
+        handleSelection(tmp);
       });
   }, [selection, dimensions, data, activeIndices]);
 
