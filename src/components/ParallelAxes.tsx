@@ -43,9 +43,13 @@ const ParallelAxes = ({
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  const [data] = useState(objectiveData); // if changes, the whole graph is re-rendered
+  const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
   const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
+
+  useEffect(() => {
+    SetData(objectiveData);
+  }, [objectiveData]);
 
   useEffect(() => {
     SetActiveIndices(selectedIndices);
