@@ -108,8 +108,8 @@ const ParallelAxes = ({
 
     // position the axises
     // y-axis
-    data.names.map((name, i) =>
-      selection
+    data.names.map((name, i) => {
+      const axis = selection
         .append("g")
         .attr(
           "transform",
@@ -117,16 +117,18 @@ const ParallelAxes = ({
             dimensions.marginTop
           })`
         )
-        .call(yAxixes()[i])
+        .call(yAxixes()[i].tickSizeOuter(0));
+      axis.selectAll("text").attr("font-size", "20px");
+      axis
         .append("text")
         .style("text-anchor", "middle")
-        .attr("y", -9)
-        .attr("font-size", 18)
+        .attr("y", "-12px")
+        .attr("font-size", "22px")
         .text(
           () => `${data.names[i]} (${data.directions[i] === 1 ? "min" : "max"})`
         )
-        .style("fill", "black")
-    );
+        .style("fill", "black");
+    });
 
     // create lines data
     const linesData = data.values.map((datum) => {
@@ -155,7 +157,7 @@ const ParallelAxes = ({
       .attr("d", (_, i) => lines[i])
       .attr("fill", "none")
       .attr("stroke", "#69b3a2")
-      .attr("stroke-width", 1);
+      .attr("stroke-width", "5px");
 
     // add thick invisible paths, these will be used to trigger and improve mouse events
     selection
@@ -174,7 +176,7 @@ const ParallelAxes = ({
       .attr("d", (_, i) => lines[i])
       .attr("fill", "none")
       .attr("stroke", "none")
-      .attr("stroke-width", 15)
+      .attr("stroke-width", "20px")
       .attr("pointer-events", "visibleStroke") // Otherwise the paths will be treated as closed shapes
       .on("mouseenter", (_, datum) => {
         SetHoverTarget(datum.index);
@@ -211,7 +213,7 @@ const ParallelAxes = ({
 
     // selection from filter is not empty
     if (!highlightSelect.empty()) {
-      highlightSelect.attr("stroke-width", 2).attr("stroke", "red");
+      highlightSelect.attr("stroke-width", "5px").attr("stroke", "red");
     }
 
     // dim not selected
@@ -227,7 +229,7 @@ const ParallelAxes = ({
 
     // selection from filter is not empty
     if (!dimSelection.empty()) {
-      dimSelection.attr("stroke-width", 1).attr("stroke", "#69b3a2");
+      dimSelection.attr("stroke-width", "5px").attr("stroke", "#69b3a2");
     }
   }, [activeIndices, selection]);
 
@@ -247,7 +249,7 @@ const ParallelAxes = ({
 
       // check not empty
       if (!resetSelection.empty()) {
-        resetSelection.attr("stroke-width", 1).attr("stroke", "#69b3a2");
+        resetSelection.attr("stroke-width", "5px").attr("stroke", "#69b3a2");
       }
       return;
       // end effect
@@ -263,7 +265,7 @@ const ParallelAxes = ({
 
     // check not empty
     if (!hoverSelection.empty()) {
-      hoverSelection.attr("stroke-width", 2).attr("stroke", "pink");
+      hoverSelection.attr("stroke-width", "5px").attr("stroke", "pink");
     }
   }, [hoverTarget, selection, activeIndices]);
 

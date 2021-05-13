@@ -155,7 +155,7 @@ const HorizontalBars = ({
               y().call(y, d.name)! + y().bandwidth() * 1.05
             })`
           )
-          .call(xAxises()[i])
+          .call(xAxises()[i].tickSizeOuter(0))
       );
 
       // enter selection, append to this
@@ -171,8 +171,8 @@ const HorizontalBars = ({
             dimensions.marginLeft + dimensions.chartWidth + 10
           }, ${y()(d.name)! + y().bandwidth() / 2})`;
         })
-        .text((d) => `${d.name} ${d.direction === -1 ? "⬆️" : "⬇️"}`)
-        .attr("font-size", 18)
+        .text((d) => `${d.name} ${d.direction === -1 ? "(max)" : "(min)️"}`)
+        .attr("font-size", "14px")
         .attr("font-weight", "bold");
 
       // draw the positive space for max problems and negative space for min problems
@@ -194,9 +194,9 @@ const HorizontalBars = ({
         .attr("height", y().bandwidth)
         .attr("fill", (d) => {
           if (d.direction === -1) {
-            return "green";
+            return "#90ee90";
           } else {
-            return "red";
+            return "#ffcccb";
           }
         });
 
@@ -225,9 +225,9 @@ const HorizontalBars = ({
         .attr("height", y().bandwidth)
         .attr("fill", (d) => {
           if (d.direction === -1) {
-            return "red";
+            return "#ffcccb";
           } else {
-            return "green";
+            return "#90ee90";
           }
         });
 
@@ -301,9 +301,10 @@ const HorizontalBars = ({
           }, ${y()(d.name)! + y().bandwidth() / 2})`;
         })
         .text(
-          (d) => `${d.name}: ${d.value} ${d.direction === -1 ? "⬆️" : "⬇️"}`
+          (d) =>
+            `${d.name}: ${d.value} ${d.direction === -1 ? "(max)️" : "(min)️"}`
         )
-        .attr("font-size", 14)
+        .attr("font-size", "16px")
         .attr("font-weight", "light");
 
       // draw a transparent overlay on top of each bar to work as an event detector
@@ -431,7 +432,7 @@ const HorizontalBars = ({
         .text(
           (d, i) =>
             `${d.name}: ${infoPointerLocs[i].toExponential(2)} ${
-              d.direction === -1 ? "⬆️" : "⬇️"
+              d.direction === -1 ? "(max)" : "(min)️"
             }`
         );
 
