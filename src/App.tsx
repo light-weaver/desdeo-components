@@ -1,6 +1,7 @@
 // import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
 import ParallelAxes from "./components/ParallelAxes";
+import RadarChart from "./components/RadarChart";
 import { exampleDataTen4Objectives } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
@@ -21,10 +22,8 @@ function App() {
         />
       </div>
       <div style={{ width: "800px", float: "left" }}>
-        <ParallelAxes
+        <RadarChart
           objectiveData={exampleDataTen4Objectives}
-          selectedIndices={selected}
-          handleSelection={setSelected}
         />
       </div>
     </>
