@@ -2,9 +2,8 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
 import { scaleLinear, scaleBand } from "d3-scale";
 import { line } from "d3-shape";
-import { axisBottom } from "d3-axis";
+import { axisBottom, axisLeft } from "d3-axis";
 import "d3-transition";
-import { easeCubic } from "d3-ease";
 import "./Svg.css";
 import { ObjectiveData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
@@ -12,14 +11,8 @@ import { RectDimensions } from "../types/ComponentTypes";
 interface RadarChartProps {
   objectiveData: ObjectiveData;
   dimensionsMaybe?: RectDimensions;
-  /* TODO: mitä muuta tarvitsee?
-   */
+  // what else is needed
 }
-
-type Coordinate = {
-  X: number;
-  Y: number;
-};
 
 const defaultDimensions = {
   chartHeight: 600,
@@ -30,7 +23,6 @@ const defaultDimensions = {
   marginBottom: 30,
 };
 
-// mitä muuta tarvitsee
 const RadarChart = ({ objectiveData, dimensionsMaybe }: RadarChartProps) => {
   const ref = useRef(null);
   const [selection, setSelection] = useState<null | Selection<
@@ -42,10 +34,22 @@ const RadarChart = ({ objectiveData, dimensionsMaybe }: RadarChartProps) => {
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  const [data] = useState(objectiveData.values[0]);
-  console.log("og data", data)
-  
-  const features = [0,1,2,3,4]
+  const [data] = useState(objectiveData);
+  console.log("og data", data);
+
+  //const ideals = 
+  //console.log(ideals);
+  const nadirs = data.nadir;
+    console.log(nadirs)
+
+    const axisLenght = dimensions.chartWidth / 3;
+    const offset = 300;
+  // change the angle in the unit circle. ioffset since d3 draws from topleft corner  
+  const angleCoordinate = (angle: number) => {
+    let x = Math.cos(angle) * axisLenght;
+    let y = Math.sin(angle) * axisLenght;
+    return { x: offset + x, y: offset - y };
+  };
 
   useEffect(() => {
     if (!selection) {
@@ -69,109 +73,23 @@ const RadarChart = ({ objectiveData, dimensionsMaybe }: RadarChartProps) => {
       return;
     }
 
-    // hard code the basic chart
-    const radialScale = scaleLinear().domain([0, 500]).range([0, 300]);
-    const ticks = [50,100,200,500]; // get from data
-    ticks.forEach((t) =>
-      selection
-        .append("circle")
-        .attr("cx", 300)
-        .attr("cy", 300)
-        .attr("fill", "none")
-        .attr("stroke", "blue")
-        .attr("r", radialScale(t))
-    );
-    ticks.forEach((t) =>
-      selection
-        .append("text")
-        .attr("x", 305)
-        .attr("y", 300 - radialScale(t))
-        .text(t.toString())
-    );
-
-    // plot the axes, hardcoding. Types look litle cumbersome or i am doing it wrong.
-    const angleCoordinate = (angle: number, value: number) => {
-      let x = Math.cos(angle) * radialScale(value);
-      let y = Math.sin(angle) * radialScale(value);
-      /*
-      let coord: Coordinate = {
-        X: 300 + x,
-        Y: 300 - y,
-      };
-      return coord;
-       */
-      return {"x": 300 + x, "y": 300 - y};
-    };
-
-    // hard code some of the data, get it from desdeo later. Kinda broken but ok
-    for (var i = 0; i < features.length; i++) {
-      let angle = Math.PI / 2 + (2 * Math.PI * i) / features.length;  
-      let line_coord = angleCoordinate(angle, 500);
-      let label_coord = angleCoordinate(angle, 450);
-
-      // draw the chart
+    // position the axises
+    data.names.map((name, i) => {
+      console.log("!",name, i)
+      let angle = Math.PI / 2 + (2 * Math.PI * i) / data.names.length;
+      let line_coord = angleCoordinate(angle);
+      let label_coord = angleCoordinate(angle);
       selection
         .append("line")
-        .attr("x1", 300)
-        .attr("y1", 300)
+        .attr("x1", offset)
+        .attr("y1", offset)
         .attr("x2", line_coord.x)
         .attr("y2", line_coord.y)
         .attr("stroke", "black");
-      selection
-        .append("text")
-        .attr("x", label_coord.x)
-        .attr("y", label_coord.y)
-        .text(i);
-    }
 
-    /* How to do lines
-        // create lines data
-    const linesData = data.values.map((datum) => {
-      return datum.value.map((v, i) => {
-        return [x().call(x, data.names[i])!, ys()[i](v)];
-      });
+        // for now we just append some pixels so the labels stay in the picture. TODO: add padding instead.
+      selection.append('text').attr('x', label_coord.x + 50).attr('y',label_coord.y +50).text(name.toString())
     });
-
-    const lines = linesData.map((datum) => {
-      return line()(
-        datum.map((d) => {
-          return [d[0], d[1]];
-        })
-      );
-    });
-     */
-    // plot the fake data. Dont use ts-ignore.
-    // @ts-ignore:
-    let Line: any = line().x(d => d.x).y(d => d.y);
-
-    const colors = ["red", "gray", "navy"];
-    const getPath = (data_point: number[]) => {
-      let coords = [];
-      for (var i = 0; i < features.length; i++) {
-        let angle = Math.PI / 2 + (2 * Math.PI * i) / features.length;
-        coords.push(angleCoordinate(angle, data_point[i]));
-      }
-      return coords;
-    };
-    for (var i = 0; i < features.length; i++) {
-      console.log("data:", data.value)
-      let d = data.value;
-      console.log(typeof(d))
-      console.log("tässä d:", d)
-      let color = colors[i];
-      let coords = getPath(d);
-      console.log(coords)
-
-      selection
-        .append("path")
-        .datum(coords)
-        .attr("d", Line)
-        .attr("stroke-width", 3)
-        .attr("stroke", color)
-        .attr("fill", color)
-        .attr("stroke-opacity", 1)
-        .attr("opacity", 0.5);
-    }
   }, [selection, dimensions]); // add data and active one
 
   return <div ref={ref} id="container" className="svg-container"></div>;
