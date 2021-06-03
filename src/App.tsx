@@ -1,7 +1,7 @@
 // import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
 import ParallelAxes from "./components/ParallelAxes";
-import RadarChart from "./components/RadarChart";
+import { RadarChart } from "./components/RadarChart";
 import { exampleDataTen4Objectives, exampleDataSingle3Objectives, exampleDataSingle5Objectives } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
