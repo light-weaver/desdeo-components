@@ -39,46 +39,73 @@ export const RadarChart = ({
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  const [data] = useState(objectiveData);
+  const [data, SetData] = useState(objectiveData);
+
+  useEffect(() => {
+    SetData(objectiveData);
+  }, [objectiveData]);
 
   //const datadims = data.values[0].value.length; // get number of objectives. todo: make a getter
   //console.log("dims", datadims)
   //const colors = ["#EDC951","#CC333F","#00A0B0"]
-  const datadatum = data.values;
 
-  const dataunit = datadatum[0].value;
-  console.log("dta", dataunit);
-  const datalist = [{ x: 0, value: 93.24 }];
-
-  console.log("datavalues", datalist);
-
-  const maxValue = 800; // get this from the data
   const colorScale = scaleOrdinal().range(["#EDC951", "#CC333F", "#00A0B0"]);
 
   const allAxis = data.names;
   //["Price", "Quality", "Time"] // data.names; //(data.names.map((name) => name )) fix this
-  console.log(allAxis);
   const axisNumbers = allAxis.length;
   const radius = Math.min(dimensions.chartWidth, dimensions.chartHeight) / 2;
   console.log("rad", radius);
   //const Format = format('%');
   
+  // temp constraints
+  let minDomain = 0;
+  let maxDomain = 1;
+  data.names.map((_,i) => {
+    minDomain =  data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i];
+    maxDomain = data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i];
+  })
 
-  const rs = useCallback( () => 
-    scaleLinear().domain([0, maxValue]).range([0, radius]),[data, maxValue]
+  const maxValue = maxDomain; // get this from the data
+
+  const rs = useCallback(() => {
+    return data.ideal.map((_, i) => {
+      return scaleLinear()
+        .domain([
+          data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
+          data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
+        ])
+        .range([0, radius]);
+    });
+  }, [data, maxValue]);
+
+  const yAxises = useCallback(() => {
+    return data.directions.map((_, i) => {
+      return axisLeft(rs()[i]);
+    });
+  }, [data, rs]);
+
+  const xs = useCallback(
+    () =>
+      scaleBand()
+        .domain(data.names.map((name) => name))
+        .range([0, 360])
+        .padding(1),
+    [dimensions, data]
   );
 
-  const radScale = scaleLinear().domain([0, maxValue]).range([0, radius]);
-  
+  const radScale = scaleLinear()
+  //.domain([minDomain, maxDomain])
+  .domain([minDomain,maxDomain])
+  .range([0, 360]);
+
   let angle = (Math.PI * 2) / axisNumbers;
   // add svg and update selection
   const renderH =
     dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
 
-  console.log(renderH);
   const renderW =
     dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight;
-  console.log(renderW);
 
   useEffect(() => {
     if (!selection) {
@@ -97,6 +124,7 @@ export const RadarChart = ({
     }
     // clear the svg
     selection.selectAll("*").remove();
+
     const g = selection
       .append("g")
       .attr("transform", "translate(" + renderW / 2 + ", " + renderH / 2 + ")");
@@ -141,39 +169,65 @@ export const RadarChart = ({
       .style("stroke-width", "2px");
     // axis labels
 
-      const linesData = data.values.map((datum) => {
-        return datum.value.map((v,_) => {
-          return [rs().call(rs, maxValue), rs()(v)]
-        });
+    const linesData = data.values.map((datum) => {
+      return datum.value.map((v, i) => {
+        return [xs().call(xs, data.names[i])!, radScale(v)];
       });
+    });
 
-      const lines = linesData.map((datum) => {
-        return lineRadial().
-          curve(curveLinearClosed).radius((d,i)=>radScale(d[i])).angle((_,i) => i*angle)
-        (
-          datum.map((d) => {
-            return [d[0], d[1]];
-          }
-        ));
-      });
+    // This is a mess. TODO: make it again so that datapoints would actually hit the axels and then worry about moving them to the right positions.
+    //const lineRad = lineRadial().curve(curveLinearClosed).radius(d, 
 
-    // radar chart blobs
-    const radarLine = lineRadial()
-      .curve(curveLinearClosed)
-      .radius((d, i) => radScale(d[i]))
-      .angle((_, i) => i * angle);
-  
+    console.log("linedata",linesData)
+    // also problem is that values don't touch the axels. Need to make that happen someway
+    //radScale(maxValue * 1.1) * Math.cos(angle * i - Math.PI / 2);
+    //  value: [50, 0.2, -500],
+    // bug here, otherwise should work. i goes over the index, making the path to undef.
+    let ist = 0
+    const lines2 = linesData.map((datum) => {
+      return lineRadial()
+        .curve(curveLinearClosed)
+        .radius((d, i) => {console.log("tämä",d, i, d[i]); return (radScale(d[i] * 1.1)*Math.cos(angle* i - Math.PI/2) ); })
+        //.radius(360)
+        .angle((_, i) => i * angle)(
+        datum.map((d) => {
+          console.log("i", ist)
+          ist += 1
+          return [d[0], d[1]];
+        })
+      );
+    });
+
+    console.log("l2",lines2)
+    const lines = linesData.map((datum) => {
+      return line()(
+        datum.map((d,i) => {
+          console.log("arvot", d, i)
+          console.log( "tulos", [(radScale(d[0]* 1.1)*Math.cos(angle*i - Math.PI/2)), (radScale(d[1] *1.1)*Math.sin(angle*i - Math.PI/2)) ]   )
+          return [d[0], d[1] ];
+        })
+      );
+    });
+
+    console.log("l",lines)
+    console.log("data values", data.values)
+
     // create lines data
     //Create a wrapper for the blobs
     let blobWrapper = g
       .selectAll(".radarWrapper")
-      .data(datadatum)
+      .data(data.values)
       .enter()
       .append("g")
       .attr("class", "radarWrapper");
 
     // Needs data there to work and at right form.
-    blobWrapper.append("path").attr('class', 'radarStroke').attr("d", (_,i) => lines[i]).attr('stroke', 'red').attr('stroke-width', '5px');
+    blobWrapper
+      .append("path")
+      .attr("class", "radarStroke")
+      .attr("d", (_, i) => { console.log("viivat", i); return lines[i];} ) // from the example this should feed the datum for lines
+      .attr("stroke", "red")
+      .attr("stroke-width", "5px");
 
     //selection.selectAll("g").attr("transform", `translate(0 ${dimensions.marginTop})`);
   }, [selection, dimensions, data]); // add data and active one
