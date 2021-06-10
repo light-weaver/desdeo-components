@@ -7,7 +7,7 @@ import { range, max } from "d3-array";
 
 import "d3-transition";
 import "./Svg.css";
-import { ObjectiveData } from "../types/ProblemTypes";
+import { ObjectiveData, ObjectiveDatum } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface RadarChartProps {
@@ -24,8 +24,6 @@ const defaultDimensions = {
   marginTop: 30,
   marginBottom: 30,
 };
-
-
 
 export const RadarChart = ({
   objectiveData,
@@ -64,9 +62,13 @@ export const RadarChart = ({
   console.log("angleslice", angleSlice);
   console.log("axis", allAxis);
   // scale to linearize the data
+  // Need to make scale different for each objective
   // this needs to take ideals and nadirs to account.
   const rScale = scaleLinear().range([0, radius]).domain([0, maxValue]);
 
+  useEffect(() => {
+    SetData(objectiveData);
+  }, [objectiveData]);
 
   useEffect(() => {
     if (!selection) {
@@ -156,6 +158,7 @@ export const RadarChart = ({
       });
     });
 
+    // could do common data both for lines and PO circles
     const lines = linesData.map((datum) => {
       return lineRadial().curve(curveLinearClosed)(
         datum.map((d) => {
@@ -204,28 +207,49 @@ export const RadarChart = ({
       .style("stroke", (_, i) => colors[i])
       .style("fill", "none");
 
-    // append the solution points
-    blobWrapper
+    const poDatum: ObjectiveDatum[] = data.values;
+
+    const poDots = linesData.map((d) => {
+      return [d[0], d[1]];
+    });
+    console.log("doits", poDots);
+
+    const blobCirclesEnter = blobWrapper
       .selectAll(".radarCicle")
-      .data(
-        data.values.map((d, i) => {
-          return { index: i, ...d };
+      .data(poDatum)
+      .enter();
+
+
+     let [eka,toka, kolmas] = poDatum
+      console.log("ayay",poDatum)
+      console.log(eka.value, toka, kolmas )
+
+
+    // append the solution points. Think how to make smart, only d
+    // Need to go over every number in value[] and draw circle at x, y there. loop over all values per axis or?
+    // Do own circlesdata function? <-- This seems like the way to go with d3 opinions 
+    poDatum.forEach((entry) => {
+      console.log("E",entry)
+      const {selected, value} =  entry;
+      console.log(selected, value)
+      blobCirclesEnter
+        .append("circle")
+        .attr("class", "radarCicle")
+        .attr("r", 5)
+        .attr("cx", function (_,i) {
+          //console.log("dee ja index",d, i);
+          //console.log("picked val", d.value[i]);
+          return rScale(value[i]) * Math.cos(angleSlice * i - Math.PI / 2);
         })
-      )
-      .enter()
-      .append("circle")
-      .attr("class", "radarCicle")
-      .attr("r", levels)
-      .attr(
-        "cx",
-        (d, i) => rScale(d.value[i]) * Math.cos(angleSlice * i - Math.PI / 2)
-      )
-      .attr(
-        "cy",
-        (d, i) => rScale(d.value[i]) * Math.sin(angleSlice * i - Math.PI / 2)
-      )
-      .style("fill", "red")
-      .style("fill-opacity", 0.8);
+        .attr(
+          "cy",
+          (_, i) => rScale(value[i]) * Math.sin(angleSlice * i - Math.PI / 2)
+        )
+        .style("fill", "red")
+        .style("fill-opacity", 1);
+    });
+
+
     //selection.selectAll("g").attr("transform", `translate(0 ${dimensions.marginTop})`);
   }, [selection, data, dimensions]); // add data and active one
 
