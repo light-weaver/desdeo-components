@@ -3,7 +3,7 @@ import { select, selectAll, Selection, pointer } from "d3-selection";
 import { scaleLinear, scaleBand, scaleOrdinal } from "d3-scale";
 import { line, lineRadial, curveLinearClosed } from "d3-shape";
 import { axisBottom, axisLeft } from "d3-axis";
-import { range } from "d3-array";
+import { range, max } from "d3-array";
 
 import "d3-transition";
 import "./Svg.css";
@@ -25,32 +25,7 @@ const defaultDimensions = {
   marginBottom: 30,
 };
 
-const exampleData = [
-  [
-    //iPhone
-    { axis: "Battery Life", value: 0.22 },
-    { axis: "Brand", value: 0.28 },
-    { axis: "Contract Cost", value: 0.29 },
-    { axis: "Design And Quality", value: 0.17 },
-    { axis: "Have Internet Connectivity", value: 0.22 },
-  ],
-  [
-    //Samsung
-    { axis: "Battery Life", value: 0.27 },
-    { axis: "Brand", value: 0.16 },
-    { axis: "Contract Cost", value: 0.35 },
-    { axis: "Design And Quality", value: 0.13 },
-    { axis: "Have Internet Connectivity", value: 0.2 },
-  ],
-  [
-    //Nokia Smartphone
-    { axis: "Battery Life", value: 0.26 },
-    { axis: "Brand", value: 0.1 },
-    { axis: "Contract Cost", value: 0.3 },
-    { axis: "Design And Quality", value: 0.14 },
-    { axis: "Have Internet Connectivity", value: 0.22 },
-  ],
-];
+
 
 export const RadarChart = ({
   objectiveData,
@@ -66,30 +41,32 @@ export const RadarChart = ({
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  const [real_data, SetData2] = useState(objectiveData);
 
-  const [data, SetData] = useState(exampleData);
-
+  const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
   const renderH =
     dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
   const renderW =
     dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight; //If the supplied maxValue is smaller than the actual one, replace by the max in the data
-  let maxValue = 0.5; // get this from the real data
+  // TODO: take minuses and ideals, nadirs and directions into account.
+  //const maxValue: number = max(data, (d) => d.value) || 1;
+  const maxValue = 150;
+  console.log("maxval", maxValue);
   const colors = ["#EDC951", "#CC333F", "#00A0B0", "#AAAAAA", "#BBBBBB"];
 
-  // oma nootti: ei varmaan kannata olla xs koska pitäisi olla vain scalelinear joka skaalaa oikealle etäisyydelle origosta akselille
-  // pisteen ja radialScale joka kääntää kulman ja laittaa oikealle kohdalle ympyräkoordinaateissa.
-  // COmeon: tietysti käännät x arvon lineaarisesti skaalattuna sitten angleksi eli polaariseksi koordinaatiksi ja y arvon lineaarisesti skaalattuna radiukseski.
+  console.log("data", data);
 
-  const allAxis = exampleData[0].map(function (i, _) {
-      return i.axis;
-    }), //Names of each axis
+  const allAxis = data.names.map((name, _) => name), //Names of each axis
     total = allAxis.length, //The number of different axes
     radius = Math.min(renderW / 2, renderH / 2), //Radius of the outermost circle
     angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
   const levels = 4; // how many background circles we want
+
+  console.log("angleslice", angleSlice);
+  console.log("axis", allAxis);
   // scale to linearize the data
+  // this needs to take ideals and nadirs to account.
   const rScale = scaleLinear().range([0, radius]).domain([0, maxValue]);
+
 
   useEffect(() => {
     if (!selection) {
@@ -122,8 +99,7 @@ export const RadarChart = ({
       .enter()
       .append("circle")
       .attr("class", "gridCircle")
-      //.attr("transform", "translate(300,300)") // for this, do as in parallelaxes, scale with sizes
-      .attr("r", (d, _) => (radius / levels) * d)
+      .attr("r", (i, _) => (radius / levels) * i)
       .style("fill", "white")
       .style("stroke", "lightblue")
       .style("fill-opacity", 0.2);
@@ -150,40 +126,47 @@ export const RadarChart = ({
         "y2",
         (_, i) => rScale(maxValue) * Math.sin(angleSlice * i - Math.PI / 2)
       )
-      // .attr("transform", "translate(300,300)") // for this, do as in parallelaxes, scale with sizes
       .attr("class", "line")
       .style("stroke", "black")
-      .style("stroke-width", "5px");
+      .style("stroke-width", "3px");
 
     // axis labels
     axis
       .append("text")
       .attr("class", "legend")
-      .style("font-size", "10px")
+      .style("font-size", "15px")
       .attr("text-anchor", "middle")
       .attr("dy", "0.35em")
       .attr(
         "x",
         (_, i) =>
-          rScale(maxValue * 0.95) * Math.cos(angleSlice * i - Math.PI / 2)
+          rScale(maxValue * 0.95) * Math.cos(angleSlice * i + 0.1 - Math.PI / 2)
       )
       .attr(
         "y",
         (_, i) =>
-          rScale(maxValue * 0.9) * Math.sin(angleSlice * i - Math.PI / 2)
+          rScale(maxValue * 0.9) * Math.sin(angleSlice * i + 0.1 - Math.PI / 2)
       )
-      .text((d) => d);
+      .text((name) => name);
 
-    const radarLine = lineRadial()
-      .curve(curveLinearClosed)
-      // @ts-ignore
-      .radius((d) => rScale(d.value))
-      .angle((_, i) => i * angleSlice);
+    // create lines data
+    const linesData = data.values.map((datum) => {
+      return datum.value.map((v, i) => {
+        return [angleSlice * i, rScale(v)];
+      });
+    });
 
+    const lines = linesData.map((datum) => {
+      return lineRadial().curve(curveLinearClosed)(
+        datum.map((d) => {
+          return [d[0], d[1]];
+        })
+      );
+    });
     //Create a wrapper for the blobs
-    let blobWrapper = g
+    const blobWrapper = g
       .selectAll(".radarWrapper")
-      .data(exampleData) // this needs real data too
+      .data(data.values) // this needs real data too
       .enter()
       .append("g")
       .attr("class", "radarWrapper");
@@ -192,15 +175,11 @@ export const RadarChart = ({
     blobWrapper
       .append("path")
       .attr("class", "radarArea")
-      // @ts-ignore
-      .attr("d", (d, _) => radarLine(d)) // from the example this should feed the datum for lines
-      // @ts-ignore
+      .attr("d", (_, i) => lines[i]) // from the example this should feed the datum for lines
       .attr("fill", (_, i) => colors[i])
       .attr("fill-opacity", 0.5)
-      //.on('mouseover', ((d,i) => selectAll('.radarArea').transition().duration(200)).style('fill-opacity', 0.1));
-      // @ts-ignore
-      .on("mouseover", function (d, i) {
-        //Dim all blobs
+      .on("mouseover", function () {
+        //Diddm all blobs
         selectAll(".radarArea")
           .transition()
           .duration(200)
@@ -216,37 +195,39 @@ export const RadarChart = ({
           .style("fill-opacity", 0.5);
       });
 
+    //Create the outlines
+    blobWrapper
+      .append("path")
+      .attr("class", "radarStroke")
+      .attr("d", (_, i) => lines[i])
+      .style("stroke-width", 2 + "px")
+      .style("stroke", (_, i) => colors[i])
+      .style("fill", "none");
+
     // append the solution points
     blobWrapper
       .selectAll(".radarCicle")
-      .data((d, _) => d)
+      .data(
+        data.values.map((d, i) => {
+          return { index: i, ...d };
+        })
+      )
       .enter()
       .append("circle")
       .attr("class", "radarCicle")
       .attr("r", levels)
       .attr(
         "cx",
-        (d, i) => rScale(d.value) * Math.cos(angleSlice * i - Math.PI / 2)
+        (d, i) => rScale(d.value[i]) * Math.cos(angleSlice * i - Math.PI / 2)
       )
       .attr(
         "cy",
-        (d, i) => rScale(d.value) * Math.sin(angleSlice * i - Math.PI / 2)
+        (d, i) => rScale(d.value[i]) * Math.sin(angleSlice * i - Math.PI / 2)
       )
-      .style("fill", "yellow")
+      .style("fill", "red")
       .style("fill-opacity", 0.8);
-
-    //Create the outlines
-    blobWrapper
-      .append("path")
-      .attr("class", "radarStroke")
-      // @ts-ignore
-      .attr("d", (d, _) => radarLine(d))
-      .style("stroke-width", 2 + "px")
-      .style("stroke", (_, i) => colors[i])
-      .style("fill", "none");
-
     //selection.selectAll("g").attr("transform", `translate(0 ${dimensions.marginTop})`);
-  }, [selection]); // add data and active one
+  }, [selection, data, dimensions]); // add data and active one
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };

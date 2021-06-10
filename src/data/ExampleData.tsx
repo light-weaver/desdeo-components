@@ -26,6 +26,27 @@ export const exampleDataSingle3Objectives: ObjectiveData = {
   nadir: [101, 0.11, 801],
 };
 
+export const exampleDataSimple3Objectives: ObjectiveData = {
+  values: [
+    {
+      selected: false,
+      value: [50, 0.2, 100],
+    },
+    {
+      selected: false,
+      value: [75, 0.4, 90],
+    },
+    {
+      selected: false,
+      value: [5, 0.8, 10],
+    },
+  ],
+  names: ["Price", "Quality", "Time"],
+  directions: [1, 1, 1],
+  ideal: [25, 0.95, 150],
+  nadir: [101, 0.11, 1],
+};
+
 export const exampleDataTen4Objectives: ObjectiveData = {
   names: ["Price", "Quality", "Time", "Efficiency"],
   directions: [1, -1, 1, -1],

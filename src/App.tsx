@@ -2,7 +2,7 @@
 import HorizontalBars from "./components/HorizontalBars";
 import ParallelAxes from "./components/ParallelAxes";
 import { RadarChart } from "./components/RadarChart";
-import { exampleDataTen4Objectives, exampleDataSingle3Objectives, exampleDataSingle5Objectives } from "./data/ExampleData";
+import { exampleDataSimple3Objectives, exampleDataTen4Objectives, exampleDataSingle3Objectives, exampleDataSingle5Objectives } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
     <>
       <div style={{ width: "600px", height: "600px", float: "left" }}>
         <RadarChart
-          objectiveData={exampleDataSingle3Objectives}
+          objectiveData={exampleDataSimple3Objectives}
         />
       </div>
         <div style={{ width: "600px", height: "600px", float: "left" }}>
