@@ -30,15 +30,15 @@ export const exampleDataSimple3Objectives: ObjectiveData = {
   values: [
     {
       selected: false,
-      value: [50, 0.2, 100],
+      value: [30, 0.2, 100],
     },
     {
       selected: false,
-      value: [75, 0.4, 90],
+      value: [75, 0.4, 80],
     },
     {
       selected: false,
-      value: [5, 0.8, 10],
+      value: [25, 0.8, 10],
     },
   ],
   names: ["Price", "Quality", "Time"],

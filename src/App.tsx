@@ -29,13 +29,6 @@ function App() {
           objectiveData={exampleDataTen4Objectives}
         />
       </div>
-      <div style={{ width: "800px", float: "right" }}>
-        <ParallelAxes
-          objectiveData={exampleDataTen4Objectives}
-          selectedIndices={selected}
-          handleSelection={setSelected}
-        />
-      </div>
     </>
   );
 }
