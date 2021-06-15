@@ -4,7 +4,6 @@ import { scaleLinear, scaleBand, scaleOrdinal } from "d3-scale";
 import { line, lineRadial, curveLinearClosed } from "d3-shape";
 import { axisBottom, axisLeft, axisTop, axisRight } from "d3-axis";
 import { range, max } from "d3-array";
-import { format } from "d3-format";
 
 import "d3-transition";
 import "./Svg.css";
@@ -67,8 +66,8 @@ export const RadarChart = ({
 
   const radScales = useCallback(() => {
     return data.directions.map((_, i) => {
-      //return radScale()[i]
-      return axisLeft(radScale()[i]);
+      return radScale()[i]
+      //return axisLeft(radScale()[i]);
     });
   }, [data, radScale]);
 
@@ -81,11 +80,18 @@ export const RadarChart = ({
     [dimensions, data]
   );
 
+  const bandScales = useCallback(() => {
+    return data.directions.map((_, i) => {
+      //return radScale()[i]
+      return axisLeft(radScale()[i]);
+    });
+  }, [data, radScale]);
 
 
   const maxValue = 150;
   console.log("maxval", maxValue);
-  const colors = ["#EDC951", "#CC333F", "#00A0B0", "#AAAAAA", "#BBBBBB"];
+  const colors = ["#EDC951", "#CC333F", "#00A0B0", "#AAEEEA", "#FFF111", "#FC0FC0",
+      "#B200ED", "#131E3A", "#3BB143", "#4B3A26" ];
 
   //console.log("data", data);
 
@@ -98,12 +104,9 @@ export const RadarChart = ({
   const angleDeg = 360 / total;
   //console.log("angleslice", angleSlice);
   console.log("axis", allAxis);
-  // scale to linearize the data
-  // Need to make scale different for each objective
-  // this needs to take ideals and nadirs to account.
+
+    // TODO: get rid of this and those who depend on it 
   const rScale = scaleLinear().range([0, radius]).domain([0, maxValue]);
-  const ticks = rScale.ticks(6);
-  //console.log("tikkss",ticks)
 
   const maxValues = nadir
   console.log(maxValues)
@@ -138,31 +141,26 @@ export const RadarChart = ({
       .attr("transform", "translate(" + centerX + ", " + centerY + ")");
 
 
+      // TODO: axels are mirrored at some i
       data.names.map((name,i) =>{
+          // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
         const newAx = selection.append('g')
         .attr(
           "transform", `translate(${rband().call(rband, name)! + centerX - i*rband().bandwidth()}, 0 )
           rotate( ${i*angleDeg} 0 ${centerY} )
         `)
-        .call(radScales()[i].tickSize(0))
+        .call(bandScales()[i].ticks(5)) // no idea why last axis doesn't listen to this.
         console.log(name)
 
         newAx.selectAll('text').attr('font-size', '20px');
         newAx.append('text').style('text-anchor', 'middle')
         .text(()=> `${data.names[i]} (${data.directions[i] === 1 ? "min" : "max"})`)
         .style('fill', 'black')
-//        newAx.attr('transform', `translate(
-//         0, 
-//         0)`)
-//        newAx.attr('transform', `rotate(
-//          ${rScale(150*i) * Math.cos(angleSlice * i - Math.PI / 2)}
-//          ${rScale(200*i) * Math.sin(angleSlice * i - Math.PI / 2)}
-//        )`)
-        //newAx.attr('transform', `rotate(${angleSlice*i} 300 300)`)
+
       })
 
 
-    const Format = format(".6");
+    //const Format = format(".6");
     // wrapper for grid and axises
     const axisGrid = g.append("g").attr("class", "axisWrap");
     // draw the background circles
@@ -177,81 +175,42 @@ export const RadarChart = ({
       .style("stroke", "lightblue")
       .style("fill-opacity", 0.2);
 
-//    // draw the axes
-//    const axis = axisGrid
-//      .selectAll(".axis")
-//      .data(allAxis)
-//      .enter()
-//      .append("g")
-//      .attr("class", "axis");
-//    // append the lines
-//    axis
-//      .append("line")
-//      .attr("x1", 0)
-//      .attr("y1", 0)
-//      .attr(
-//        "x2",
-//        (_, i) => rScale(maxValue) * Math.cos(angleSlice * i - Math.PI / 2)
-//      )
-//      .attr(
-//        "y2",
-//        (_, i) => rScale(maxValue) * Math.sin(angleSlice * i - Math.PI / 2)
-//      )
-//      .attr("class", "line")
-//      .style("stroke", "black")
-//      .style("stroke-width", "3px");
-//
-//    // axis labels
-//    axis
-//      .append("text")
-//      .attr("class", "legend")
-//      .style("font-size", "15px")
-//      .attr("text-anchor", "middle")
-//      .attr("dy", "0.35em")
-//      .attr(
-//        "x",
-//        (_, i) =>
-//          rScale(maxValue * 0.95) * Math.cos(angleSlice * i + 0.1 - Math.PI / 2)
-//      )
-//      .attr(
-//        "y",
-//        (_, i) =>
-//          rScale(maxValue * 0.9) * Math.sin(angleSlice * i + 0.1 - Math.PI / 2)
-//      )
-//      .text((name) => name);
-//
-//    // TODO: draw labels
-//    axis
-//      .selectAll(".axisLabel")
-//      .data(ticks)
-//      .enter()
-//      .append("text")
-//      .attr("class", "axisLabel")
-//      .attr(
-//        "x",
-//        (_, i) =>
-//          rScale(ticks[i]) * Math.cos(angleSlice * i - Math.PI / 2)
-//      )
-//      .attr(
-//        "y",
-//        (_, i) =>
-//          rScale(ticks[i]) * Math.sin(angleSlice * i - Math.PI / 2)
-//      )
-//      .attr("dy", "0.4em")
-//      .style("font-size", "12px")
-//      .attr("fill", "#737373")
-//      .text((d, _) => Format(d));
 
-    // create lines data
+/*
+    // create lines data, old
     const linesData = data.values.map((datum) => {
       return datum.value.map((v, i) => {
         return [angleSlice * i, rScale(v)];
       });
     });
+ */
+    const linesData = data.values.map((datum) => {
+      return datum.value.map((v, i) => {
+          // @ts-ignore
+        return [angleSlice * i, radScales()[i].call(radScales,v)];
+      });
+    });
+
+/*    // create lines data
+    const linesData = data.values.map((datum) => {
+      return datum.value.map((v, i) => {
+        return [x().call(x, data.names[i])!, ys()[i](v)];
+      });
+    });
+
+    const lines = linesData.map((datum) => {
+      return line()(
+        datum.map((d) => {
+          return [d[0], d[1]];
+        })
+      );
+    });
+ */
 
     // could do common data both for lines and PO circles
     const lines = linesData.map((datum) => {
       return lineRadial().curve(curveLinearClosed)(
+          // @ts-ignore
         datum.map((d) => {
           return [d[0], d[1]];
         })
@@ -260,7 +219,7 @@ export const RadarChart = ({
     //Create a wrapper for the blobs
     const blobWrapper = g
       .selectAll(".radarWrapper")
-      .data(data.values) // this needs real data too
+      .data(data.values) 
       .enter()
       .append("g")
       .attr("class", "radarWrapper");
@@ -298,12 +257,13 @@ export const RadarChart = ({
       .style("stroke", (_, i) => colors[i])
       .style("fill", "none");
 
-    const poDatum: ObjectiveDatum[] = data.values;
 
+      // TODO: scale the dots like the areas
+    const poDatum: ObjectiveDatum[] = data.values;
     const poDots = linesData.map((d) => {
       return [d[0], d[1]];
     });
-    //console.log("doits", poDots);
+    console.log("doits", poDots);
 
     const blobCirclesEnter = blobWrapper
       .selectAll(".radarCicle")
@@ -328,7 +288,7 @@ export const RadarChart = ({
           "cy",
           (_, i) => rScale(value[i]) * Math.sin(angleSlice * i - Math.PI / 2)
         )
-        .style("fill", "red")
+        .style("fill", (_,i) => colors[i])
         .style("fill-opacity", 1);
     });
 
