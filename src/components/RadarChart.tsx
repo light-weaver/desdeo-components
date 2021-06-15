@@ -22,8 +22,8 @@ const defaultDimensions = {
   chartWidth: 800,
   marginLeft: 50,
   marginRight: 50,
-  marginTop: 30,
-  marginBottom: 30,
+  marginTop: 50,
+  marginBottom: 50,
 };
 
 export const RadarChart = ({
@@ -46,6 +46,7 @@ export const RadarChart = ({
     dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
   const renderW =
     dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight; //If the supplied maxValue is smaller than the actual one, replace by the max in the data
+  console.log(renderW, renderH)
   // TODO: take minuses and ideals, nadirs and directions into account.
   //const maxValue: number = max(data, (d) => d.value) || 1;
 
@@ -129,16 +130,19 @@ export const RadarChart = ({
     // clear the svg
     selection.selectAll("*").remove();
 
+    // TODO: nämä centerX, centerY olkoon tästedes origo.
+    const centerX = renderW / 2;
+    const centerY = renderH / 2; 
     const g = selection
       .append("g")
-      .attr("transform", "translate(" + renderW / 2 + ", " + renderH / 2 + ")");
+      .attr("transform", "translate(" + centerX + ", " + centerY + ")");
 
 
       data.names.map((name,i) =>{
         const newAx = selection.append('g')
         .attr(
-          "transform", `translate(${rband().call(rband, name)! + 450 - i*rband().bandwidth()}, 0 )
-          rotate( ${i*angleDeg} 0 430 )
+          "transform", `translate(${rband().call(rband, name)! + centerX - i*rband().bandwidth()}, 0 )
+          rotate( ${i*angleDeg} 0 ${centerY} )
         `)
         .call(radScales()[i].tickSize(0))
         console.log(name)
