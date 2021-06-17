@@ -4,7 +4,7 @@ export const exampleDataSingle5Objectives: ObjectiveData = {
   values: [
     {
       selected: false,
-      value: [50, 0.2, -500, 25000, 200],
+      value: [40, 0.2, -500, 25000, 200],
     },
   ],
   names: ["Price", "Quality", "Time", "Efficiency", "???"],
@@ -30,7 +30,7 @@ export const exampleDataSimple3Objectives: ObjectiveData = {
   values: [
     {
       selected: false,
-      value: [30, 0.2, 100],
+      value: [45, 0.2, 100],
     },
     {
       selected: false,
@@ -38,11 +38,11 @@ export const exampleDataSimple3Objectives: ObjectiveData = {
     },
     {
       selected: false,
-      value: [25, 0.8, 10],
+      value: [101, 0.6, 40],
     },
   ],
   names: ["Price", "Quality", "Time"],
-  directions: [1, 1, 1],
+  directions: [1, -1, 1],
   ideal: [25, 0.95, 150],
   nadir: [101, 0.11, 1],
 };
