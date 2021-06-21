@@ -4,6 +4,7 @@ import { scaleLinear, scaleBand, scaleOrdinal, scaleRadial } from "d3-scale";
 import { line, lineRadial, curveLinearClosed } from "d3-shape";
 import { axisBottom, axisLeft, axisTop, axisRight } from "d3-axis";
 import { range, max } from "d3-array";
+import { Force, forceRadial, forceX, forceY } from "d3-force";
 
 import "d3-transition";
 import "./Svg.css";
@@ -15,6 +16,8 @@ interface RadarChartProps {
   dimensionsMaybe?: RectDimensions;
   inverseAxis: Boolean;
   turnAxis: Boolean; // turn Axis so improvement is towards same way for each axis.
+  selectedIndices: number[];
+  handleSelection: (x: number[]) => void;
   // what else is needed
 }
 
@@ -31,7 +34,9 @@ export const RadarChart = ({
   objectiveData,
   dimensionsMaybe,
   inverseAxis,
-  turnAxis
+  turnAxis,
+  selectedIndices, 
+  handleSelection,
 }: RadarChartProps) => {
   const ref = useRef(null);
   const [selection, setSelection] = useState<null | Selection<
@@ -45,28 +50,29 @@ export const RadarChart = ({
   );
 
   const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
-  const renderH =
-    dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
-  const renderW =
-    dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight; 
-  console.log(renderW, renderH);
-  // TODO: Now need to take a new look on this and start from cleaner state. 
-  //const maxValue: number = max(data, (d) => d.value) || 1;
+  //console.log(renderW, renderH);
 
+  const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
+  const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
+  
+  const offset = 20; // clumsy solution 
+
+  useEffect(() => {
+    SetActiveIndices(selectedIndices);
+  }, [selectedIndices]);
+  // TODO: Now need to take a new look on this and start from cleaner state.
 
   let radScale = useCallback(() => {
-    return data.ideal.map((d, i) => {
-      console.log("dataid",d,i )
+    return data.ideal.map((_, i) => {
       let start = radius;
-      let end = 0
+      let end = 0;
 
-      if (data.directions[i] === -1 && turnAxis === true){
+      if (data.directions[i] === -1 && turnAxis === true) {
         start = 0;
         end = radius;
-      } 
+      }
 
       return scaleLinear()
-      //return scaleRadial() // vai radiaaliskaala tässä
         .domain([
           data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
           data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
@@ -80,13 +86,12 @@ export const RadarChart = ({
       let start = 0;
       let end = radius;
 
-      if (data.directions[i] === -1 && turnAxis === true){
+      if (data.directions[i] === -1 && turnAxis === true) {
         start = radius;
         end = 0;
-      } 
+      }
 
       return scaleLinear()
-      //return scaleRadial() // vai radiaaliskaala tässä
         .domain([
           data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
           data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
@@ -96,15 +101,14 @@ export const RadarChart = ({
   }, [data]);
 
   let radScale_fix = useCallback(() => {
-    return data.ideal.map((d, i) => {
-      console.log("dataid",d,i )
+    return data.ideal.map((_, i) => {
       let start = radius;
-      let end = 0
+      let end = 0;
 
-      if (data.directions[i] === -1 && turnAxis === true){
+      if (data.directions[i] === -1 && turnAxis === true) {
         start = 0;
         end = radius;
-      } 
+      }
       return scaleLinear()
         .domain([
           data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
@@ -115,8 +119,7 @@ export const RadarChart = ({
   }, [data]);
 
   const radScales = useCallback(() => {
-    return data.directions.map((d, i) => {
-      console.log("DIRS", d, i)
+    return data.directions.map((_, i) => {
       return radScale_fix()[i];
     });
   }, [data, radScale_fix]);
@@ -135,80 +138,69 @@ export const RadarChart = ({
     });
   }, [data, radScale]);
 
-
   if (inverseAxis === true) {
     radScale = radScaleInv;
   }
 
-
-  const maxValue = 150;
-  //onsole.log("maxval", maxValue);
   const colors = [
     "#EDC951",
-    "#CC333F",
-    "#00A0B0",
-    "#AAEEEA",
+    "#3BB143",
+    "#00008B",
     "#FFF111",
     "#FC0FC0",
     "#B200ED",
     "#131E3A",
-    "#3BB143",
+    "#00A0B0",
     "#4B3A26",
   ];
 
-  //console.log("data", data);
+  // TODO: Turn labels, add margins
 
+  const renderH =
+    dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
+  const renderW =
+    dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight;
   const allAxis = data.names.map((name, _) => name), //Names of each axis
     total = allAxis.length, //The number of different axes
-    //radius = Math.min(renderW / 2, renderH / 2), //Radius of the outermost circle
+    radius = Math.min(renderW / 2, renderH / 2) - offset, //Radius of the outermost circle
     angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
-  const levels = 4; // how many background circles we want
+  const levels = 4;
 
-  const radius = 450  
-  
-  //console.log("rad",radius)
+  // angleSlice in degrees
   const angleDeg = 360 / total;
-  //console.log("angleslice", angleSlice);
-  //console.log("axis", allAxis);
-
-  // TODO: get rid of this and those who depend on it
-  const rScale = scaleLinear().range([0, radius]).domain([0, maxValue]);
-
-  //const maxValues = nadir;
 
   useEffect(() => {
     SetData(objectiveData);
   }, [objectiveData]);
 
   useEffect(() => {
+
+
     if (!selection) {
       const newSelection = select(ref.current)
         .classed("svg-container", true)
         .append("svg")
-        //.attr("preserveAspectRatio", "xMinYMin meet")
-        .attr("viewBox", `0 0 ${renderW} ${renderH}`)
-        .attr("viewBox", `0 0 ${renderW} ${renderH}`)
+        .attr("preserveAspectRatio", "xMinYMin meet")
+        .attr("viewBox", `${-offset} ${-offset} ${renderW} ${renderH}`)
+        //.attr("viewBox", `${-offset} -20 ${renderW} ${renderH}`)
         .classed("svg-content", true);
 
       // update selection
       setSelection(newSelection);
-      //console.log(newSelection);
       return;
     }
     // clear the svg
     selection.selectAll("*").remove();
 
-    // TODO: nämä centerX, centerY olkoon tästedes origo.
-    const centerX = renderW / 2;
-    const centerY = renderH / 2;
+    const centerX = renderW / 2 - offset;
+    const centerY = renderH / 2 - offset;
     const g = selection
       .append("g")
       .attr("transform", "translate(" + centerX + ", " + centerY + ")");
 
-    // TODO: axels are mirrored at some i
     data.names.map((name, i) => {
       // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
-      const newAx = selection
+      const axis = selection
         .append("g")
         .attr(
           "transform",
@@ -218,44 +210,46 @@ export const RadarChart = ({
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
         )
-        .call(bandScales()[i].tickSizeOuter(0)); // no idea why last axis doesn't listen to this.
-     // console.log(name);
+        .call(bandScales()[i].tickSizeOuter(0));
 
-      newAx.selectAll("text").attr("font-size", "20px");
-      newAx
+      axis.selectAll("text").attr("font-size", "15px");
+      axis
         .append("text")
+        .attr("class", "labels")
         .style("text-anchor", "middle")
         .text(
           () => `${data.names[i]} (${data.directions[i] === 1 ? "min" : "max"})`
         )
         .style("fill", "black");
+
+      // labels need work. angle turning needs maffs.
+      axis
+        .selectAll(".labels")
+        .attr("font-size", "20px")
+        .attr(
+          "transform",
+          `translate( 0 0 ) rotate(${i * angleDeg * 2} 0 -10 ) `
+        );
     });
 
-    //const Format = format(".6");
     // wrapper for grid and axises
     const axisGrid = g.append("g").attr("class", "axisWrap");
     // draw the background circles
     axisGrid
       .selectAll("circle")
-      .data(range(1, levels).reverse())
+      .data(range(1, levels + 1).reverse())
       .enter()
       .append("circle")
       .attr("class", "gridCircle")
-      .attr("r", (i, _) => (radius / levels) * i)
+      .attr("r", (i, _) => (radius / levels - 1) * i - offset)
       .style("fill", "white")
       .style("stroke", "lightblue")
       .style("fill-opacity", 0.2);
 
-
-
     const linesData = data.values.map((datum) => {
       return datum.value.map((v, i) => {
-        console.log("i, v", i, v)
-
-        let x = (angleSlice * i)
-        let y = radScales()[i](v)
-        console.log("X", x)
-        console.log("Y", y)
+        let x = angleSlice * i;
+        let y = radScales()[i](v);
         return [x, y];
       });
     });
@@ -268,6 +262,16 @@ export const RadarChart = ({
         })
       );
     });
+
+    // function to change the fill_opacity. Right now only rudimentary.
+    const fill_opacity = () => {
+      if (lines.length > 5) {
+        return 0.0;
+      } else {
+        return 0.5;
+      }
+    };
+
     //Create a wrapper for the blobs
     const blobWrapper = g
       .selectAll(".radarWrapper")
@@ -283,7 +287,7 @@ export const RadarChart = ({
       //.attr('transform', `translate(${centerX} ${centerY})`)
       .attr("d", (_, i) => lines[i])
       .attr("fill", (_, i) => colors[i])
-      .attr("fill-opacity", 0.5)
+      .attr("fill-opacity", fill_opacity)
       .on("mouseover", function () {
         //Diddm all blobs
         selectAll(".radarArea")
@@ -298,54 +302,77 @@ export const RadarChart = ({
         selectAll(".radarArea")
           .transition()
           .duration(200)
-          .style("fill-opacity", 0.5);
+          .style("fill-opacity", fill_opacity);
       });
 
     //Create the outlines
     blobWrapper
       .append("path")
-      .attr("class", "radarStroke")
       .attr("d", (_, i) => lines[i])
-      .style("stroke-width", 2 + "px")
+      .style("stroke-width", 4 + "px")
       .style("stroke", (_, i) => colors[i])
       .style("fill", "none");
 
-    // TODO: scale the dots like the areas
-//    const poDatum: ObjectiveDatum[] = data.values;
-//    const poDots = linesData.map((d) => {
-//      return [d[0], d[1]];
-//    });
-//    console.log("doits", poDots);
-//
-//    const blobCirclesEnter = blobWrapper
-//      .selectAll(".radarCicle")
-//      .data(poDatum)
-//      .enter();
-//
-//    // append the solution points. Think how to make smart, only d
-//    poDatum.forEach((entry) => {
-//      // console.log("E", entry);
-//      const { selected, value } = entry;
-//      console.log(selected, value);
-//      blobCirclesEnter
-//        .append("circle")
-//        .attr("class", "radarCicle")
-//        .attr("r", 5)
-//        .attr("cx", function (_, i) {
-//          //console.log("dee ja index",d, i);
-//          //console.log("picked val", d.value[i]);
-//          return rScale(value[i]) * Math.cos(angleSlice * i - Math.PI / 2);
-//        })
-//        .attr(
-//          "cy",
-//          (_, i) => rScale(value[i]) * Math.sin(angleSlice * i - Math.PI / 2)
-//        )
-//        .style("fill", (_, i) => colors[i])
-//        .style("fill-opacity", 1);
-//    });
-//
-    //selection.selectAll("g").attr("transform", `translate(0 ${dimensions.marginTop})`);
-  }, [selection, data, dimensions]); // add data and active one
+    // add invis paths to trigger mouse events.
+    selection
+      .append("g")
+      .selectAll("path")
+      .data(
+        data.values.map((d, i) => {
+          return { index: i, ...d };
+        })
+      )
+      .enter()
+//      blobWrapper // this already has origo at centerX/Y.
+      .append("path")
+      .attr("class", "pathDetector")
+      .attr("transform", `translate(${centerX} ${centerY})`)
+      .attr("d", (_, i) => lines[i])
+      .attr("fill", "none")
+      .attr("stroke", "none")
+      .attr("stroke-width", "15px")
+      .attr('pointer-events', 'visibleStroke')
+      .on('mouseenter', (_, datum) => {
+        SetHoverTarget(datum.index);
+      }).on('mouseleave', () => {
+        SetHoverTarget(-1);
+      }).on('click', (_, datum) => {
+        if (activeIndices.includes(datum.index)) {
+          // rm the index
+          const tmp = activeIndices.filter((i) => i !== datum.index);
+          handleSelection(tmp);
+          return;
+        }
+        console.log("AFter")
+        const tmp = activeIndices.concat(datum.index)
+        handleSelection(tmp)
+      })
+
+  }, [selection, data, dimensions, activeIndices]); // add data and active one
+
+  useEffect(() => {
+    if (!selection) {
+      return;
+    }
+
+    // highlight selected
+    const highlightSelect = selection
+      .selectAll(".radarArea")
+      .data(data.values)
+      .filter((_, i) => {
+        return activeIndices.includes(i);
+      });
+
+    // selection from filter is not empty
+    if (!highlightSelect.empty()) {
+      highlightSelect.attr("stroke-width", "8px").attr("stroke", "red")
+      .style('fill_opacity', 1);
+    }
+
+
+  }, [activeIndices, selection]);
+
+
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
