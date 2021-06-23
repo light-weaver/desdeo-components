@@ -27,6 +27,7 @@ function App() {
           handleSelection={setSelected}
         />
       </div>
+      <br></br>
       <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataTen4Objectives}
@@ -35,6 +36,7 @@ function App() {
           handleSelection={setSelected}
         />
       </div>
+      <br></br>
       <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataSingle5Objectives}

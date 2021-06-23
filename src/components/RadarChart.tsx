@@ -65,7 +65,6 @@ export const RadarChart = ({
     "#3BB143",
     "#00008B",
     "#FFF111",
-    "#FC0FC0",
     "#B200ED",
     "#131E3A",
     "#00A0B0",
@@ -84,26 +83,11 @@ export const RadarChart = ({
   turnAxis = userPrefForVisuals[1];
   radarOrSpider = userPrefForVisuals[2];
 
-  // Need to figure out how to handle the oldAlternative.. Would be nice just use the linesData but then we get problems either
-  // unshifting it, then parallelaxes clicks won't always match. Push it, then the color is an issue.
-  // Solution idea:
-  // own useEffect where would be drawn also.
-  // Mess in a way that a lot of samaa koodia uudestaan.
-  // + linesData ongelma, tai sen uudelleenkirjoitus
+  // labeleista.. pallot päihin joita hover niin näkee arvot
+  // vai valitsemalla solutionin näkee tarkat arvot jossain?
 
-  // If we have oldAlternative we prepend it to the objectiveData.
-  // TODO: oldalternative situation. Looks to be working, with following problems:
-  // 1. coloring is not right, need to find solution for this. Goal would to have oldalternative on grey color instead of 
-  // first or last color of the color list.
-  // 2. By how it is implemented only by adding to the objdata, the clicks between charts will not work properly
-  // if oldalternative is present. Mostly problem only when combining say with parallelaxes.
-  useEffect(() => {
-    if (oldAlternative !== undefined) {
-      objectiveData.values.push(oldAlternative.values[0]);
-      colors.push("#808080");
-      console.log(colors);
-    }
-  }, [oldAlternative]);
+
+  const oldSol = oldAlternative;
 
   const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
 
@@ -257,15 +241,15 @@ export const RadarChart = ({
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
         )
-        .call(bandScales()[i].tickSizeOuter(0)); // this turns these the same way but I lost the text labels
+        .call(bandScales()[i].tickSize(0)); // this turns these the same way but I lost the text labels
 
       // turn the tick labels
       axis
         .selectAll("text")
-        //.style('text-anchor', 'middle')
+        .style('text-anchor', 'middle')
         .attr(
           "transform",
-          `translate( 0 0 ) rotate(${rotateLabels(i)} ${0} ${-15 * i} ) `
+          `translate( 0 0 ) rotate(${rotateLabels(i)} ${0} ${0} ) `
         );
 
       axis.selectAll("text").attr("font-size", "15px");
@@ -281,7 +265,7 @@ export const RadarChart = ({
       // labels need work. angle turning needs maffs.
       axis
         .selectAll(".labels")
-        .attr("font-size", "20px")
+        .attr("font-size", "15px")
         .attr(
           "transform",
           `translate( 0 0 ) rotate(${rotateLabels(i)} 0 -10 ) `
@@ -300,32 +284,16 @@ export const RadarChart = ({
         .attr("r", () => radius)
         .style("stroke", "black")
         .style("fill-opacity", 0.0);
-    } else {
-      // write here the spiderlines
-      //      const axisGrid = g.append("g").attr("class", "axisLine");
-      //      // draw the background line
-      //      axisGrid
-      //        .selectAll("circle")
-      //        .data(range(1, 2))
-      //        .enter()
-      //        .append("circle")
-      //        .attr("class", "gridLine")
-      //        .attr("r", () => radius)
-      //        .style("fill", "white")
-      //        .style("stroke", "black")
-      //        .style("fill-opacity", 0.2);
-    }
+    } 
 
-    const linesData = data.values.map((datum) => {
+    const linesData = (dataset : ObjectiveData) => dataset.values.map((datum) => {
       return datum.value.map((v, i) => {
-        let x = angleSlice * i;
-        let y = radScales()[i](v);
-        return [x, y];
+        return [angleSlice * i,  radScales()[i](v)];
       });
     });
 
     // could do common data both for lines and PO circles
-    const lines = linesData.map((datum) => {
+    const lines = linesData(data).map((datum) => {
       return lineRadial().curve(curveLinearClosed)(
         datum.map((d) => {
           return [d[0], d[1]];
@@ -341,6 +309,25 @@ export const RadarChart = ({
         return 0.5;
       }
     };
+
+    // outline for the oldAlternative
+    if (oldSol !== undefined ) {
+    const oldSolution = linesData(oldSol).map((datum) => {
+      return lineRadial().curve(curveLinearClosed)(
+        datum.map((d) => {
+          return [d[0], d[1]];
+        })
+      );
+    });
+       selection.append('g').selectAll('.oldSolution')
+      .data(oldSol.values).enter().append('g').attr('class', 'oldSolution').append('path')
+      .attr("transform", `translate(${centerX} ${centerY})`)
+      .attr('d', (_,i) => oldSolution[i]) 
+      .style("stroke-width", 3 + "px")
+      .style("stroke", "#808080")
+      .style("fill", "none");
+    }
+    
 
     //Create a wrapper for the blobs
     const blobWrapper = g
@@ -375,6 +362,7 @@ export const RadarChart = ({
           .style("fill-opacity", fill_opacity);
       });
 
+      
     //Create the outlines
     blobWrapper
       .append("path")

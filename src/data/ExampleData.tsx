@@ -1,5 +1,19 @@
 import { ObjectiveData } from "../types/ProblemTypes";
 
+
+export const exampleSingle5OldAlternative: ObjectiveData = {
+  values: [
+    {
+      selected: false,
+      value: [50, 0.15, -400, 20000, 150],
+    },
+  ],
+  names: ["Price", "Quality", "Time", "Efficiency", "???"],
+  directions: [1, -1, 1, -1, -1],
+  ideal: [25, 0.95, -871, 150000, 300],
+  nadir: [101, 0.11, 801, 520, 100],
+};
+
 export const exampleDataSingle5Objectives: ObjectiveData = {
   values: [
     {
