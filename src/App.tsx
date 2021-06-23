@@ -1,15 +1,13 @@
-// import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
 import ParallelAxes from "./components/ParallelAxes";
 import { RadarChart } from "./components/RadarChart";
-//import { RadarChartex } from "./components/RadarChartex";
 import {
   exampleDataSimple3Objectives,
   exampleDataTen4Objectives,
   exampleDataSingle3Objectives,
   exampleDataSingle5Objectives,
+  exampleSingle5OldAlternative
 } from "./data/ExampleData";
-//import {test3o, test4o, test5o } from "./data/testdata";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -21,18 +19,27 @@ function App() {
 
   return (
     <>
-      <div style={{ width: "600px", height: "600px", float: "left" }}>
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataSimple3Objectives}
-          inverseAxis={true}
-          turnAxis={true}
+          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
           selectedIndices={selected}
           handleSelection={setSelected}
         />
       </div>
-      <div style={{ width: "600px", height: "600px", float: "left" }}>
-        <ParallelAxes
-          objectiveData={exampleDataSimple3Objectives}
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
+        <RadarChart
+          objectiveData={exampleDataTen4Objectives}
+          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
+        <RadarChart
+          objectiveData={exampleDataSingle5Objectives}
+          oldAlternative={exampleSingle5OldAlternative}
+          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
           selectedIndices={selected}
           handleSelection={setSelected}
         />
