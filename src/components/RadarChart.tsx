@@ -58,18 +58,19 @@ export const RadarChart = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
 
-
   // color table
   let colors = [
-    "#EDC951",
-    "#3BB143",
-    "#00008B",
-    "#FFF111",
-    "#B200ED",
-    "#131E3A",
-    "#00A0B0",
-    "#4B3A26",
-    "#013220",
+    "#4B0082",
+    "#FF69B4",
+    "#00FF00",
+    "#8B4513",
+    "#4682B4",
+    "#FF1493",
+    "#00FFFF",
+    "#228B22",
+    "#FFE4C4",
+    "#0000FF",
+    "#FFFF00",
   ];
 
   // set user preferences or default settings.
@@ -85,7 +86,8 @@ export const RadarChart = ({
 
   // labeleista.. pallot päihin joita hover niin näkee arvot
   // vai valitsemalla solutionin näkee tarkat arvot jossain?
-
+  // TODO: fix objective labels. find a way to offset them so they fit to the picture and are not on top of the
+  // tick labels.
 
   const oldSol = oldAlternative;
 
@@ -193,6 +195,8 @@ export const RadarChart = ({
     angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
   const ticks = 4;
 
+  const offsetx = -15;
+  const offsety = -10;
   // angleSlice in degrees
   const angleDeg = 360 / total;
 
@@ -225,9 +229,9 @@ export const RadarChart = ({
 
     data.names.map((name, i) => {
       // rotates the labels horizontally
-      const rotateLabels = (i:number) => {
-        return -i*angleDeg;
-      }
+      const rotateLabels = (i: number) => {
+        return -i * angleDeg;
+      };
 
       // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
       const axis = selection
@@ -241,15 +245,23 @@ export const RadarChart = ({
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
         )
-        .call(bandScales()[i].tickSize(0)); // this turns these the same way but I lost the text labels
+        .call(bandScales()[i].tickSize(6)); // this turns these the same way but I lost the text labels
 
       // turn the tick labels
+      //attr('transform', (d,i)=>{
+      //return 'translate( '+xScale(i)+' , '+220+'),'+ 'rotate(45)';})
       axis
         .selectAll("text")
-        .style('text-anchor', 'middle')
+        .style("text-anchor", "start") // end, niin menee 0 akseli hyvin muut huonosti.
         .attr(
           "transform",
-          `translate( 0 0 ) rotate(${rotateLabels(i)} ${0} ${0} ) `
+          () => {
+            if (i === 0) {
+              return `translate( ${offsetx} 0 ) `;
+            }
+            return `translate( ${offsetx} 0 ) rotate(${rotateLabels(i)} 0 0 ) `;
+          }
+          //`translate( 0 0 ) rotate(${rotateLabels(i)} ${0} ${0} ) `
         );
 
       axis.selectAll("text").attr("font-size", "15px");
@@ -268,7 +280,7 @@ export const RadarChart = ({
         .attr("font-size", "15px")
         .attr(
           "transform",
-          `translate( 0 0 ) rotate(${rotateLabels(i)} 0 -10 ) `
+          `translate( 0 ${offsety} ) rotate(${rotateLabels(i)} 0 0 ) `
         );
     });
 
@@ -284,13 +296,14 @@ export const RadarChart = ({
         .attr("r", () => radius)
         .style("stroke", "black")
         .style("fill-opacity", 0.0);
-    } 
+    }
 
-    const linesData = (dataset : ObjectiveData) => dataset.values.map((datum) => {
-      return datum.value.map((v, i) => {
-        return [angleSlice * i,  radScales()[i](v)];
+    const linesData = (dataset: ObjectiveData) =>
+      dataset.values.map((datum) => {
+        return datum.value.map((v, i) => {
+          return [angleSlice * i, radScales()[i](v)];
+        });
       });
-    });
 
     // could do common data both for lines and PO circles
     const lines = linesData(data).map((datum) => {
@@ -310,24 +323,30 @@ export const RadarChart = ({
       }
     };
 
-    // outline for the oldAlternative
-    if (oldSol !== undefined ) {
-    const oldSolution = linesData(oldSol).map((datum) => {
-      return lineRadial().curve(curveLinearClosed)(
-        datum.map((d) => {
-          return [d[0], d[1]];
-        })
-      );
-    });
-       selection.append('g').selectAll('.oldSolution')
-      .data(oldSol.values).enter().append('g').attr('class', 'oldSolution').append('path')
-      .attr("transform", `translate(${centerX} ${centerY})`)
-      .attr('d', (_,i) => oldSolution[i]) 
-      .style("stroke-width", 3 + "px")
-      .style("stroke", "#808080")
-      .style("fill", "none");
+    // outline for the oldAlternative. TODO: decide on good color. Grey gets overrun by darker colors,
+    // black might be too dark.
+    if (oldSol !== undefined) {
+      const oldSolution = linesData(oldSol).map((datum) => {
+        return lineRadial().curve(curveLinearClosed)(
+          datum.map((d) => {
+            return [d[0], d[1]];
+          })
+        );
+      });
+      selection
+        .append("g")
+        .selectAll(".oldSolution")
+        .data(oldSol.values)
+        .enter()
+        .append("g")
+        .attr("class", "oldSolution")
+        .append("path")
+        .attr("transform", `translate(${centerX} ${centerY})`)
+        .attr("d", (_, i) => oldSolution[i])
+        .style("stroke-width", 3 + "px")
+        .style("stroke", "black")
+        .style("fill", "none");
     }
-    
 
     //Create a wrapper for the blobs
     const blobWrapper = g
@@ -362,7 +381,6 @@ export const RadarChart = ({
           .style("fill-opacity", fill_opacity);
       });
 
-      
     //Create the outlines
     blobWrapper
       .append("path")
@@ -418,16 +436,25 @@ export const RadarChart = ({
     const highlightSelect = selection
       .selectAll(".radarArea")
       .data(data.values)
-      .filter((_, i) => {
+      .filter((d, i) => {
+        console.log("selected d, i", d, i);
         return activeIndices.includes(i);
       });
 
-    // selection from filter is not empty
+    // selection from filter is not empty. Here you would add the legend with values for selected
     if (!highlightSelect.empty()) {
+      console.log(highlightSelect.data()[0].value[0]); // näin pääsee käsiksi valittujen pisteiden datoihin
       highlightSelect
         .attr("stroke-width", "8px")
         .attr("stroke", "red")
         .style("fill_opacity", 1);
+
+      // jotain tämän tyylistä, vaatii ajattelua.
+      //        highlightSelect.enter().append('circle').
+      //            attr('cx', 100)
+      //        .attr('cy', (_,i) => 100 + i*25)
+      //        .attr('r', 7)
+      //        .style('fill', colors[0])
     }
   }, [activeIndices, selection]);
 
