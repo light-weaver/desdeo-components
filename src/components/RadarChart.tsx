@@ -248,21 +248,15 @@ export const RadarChart = ({
         .call(bandScales()[i].tickSize(6)); // this turns these the same way but I lost the text labels
 
       // turn the tick labels
-      //attr('transform', (d,i)=>{
-      //return 'translate( '+xScale(i)+' , '+220+'),'+ 'rotate(45)';})
       axis
         .selectAll("text")
         .style("text-anchor", "start") // end, niin menee 0 akseli hyvin muut huonosti.
-        .attr(
-          "transform",
-          () => {
-            if (i === 0) {
-              return `translate( ${offsetx} 0 ) `;
-            }
-            return `translate( ${offsetx} 0 ) rotate(${rotateLabels(i)} 0 0 ) `;
+        .attr("transform", () => {
+          if (i === 0) {
+            return `translate( ${offsetx} 0 ) `;
           }
-          //`translate( 0 0 ) rotate(${rotateLabels(i)} ${0} ${0} ) `
-        );
+          return `translate( ${offsetx} 0 ) rotate(${rotateLabels(i)} 0 0 ) `;
+        });
 
       axis.selectAll("text").attr("font-size", "15px");
       axis
@@ -274,7 +268,7 @@ export const RadarChart = ({
         )
         .style("fill", "black");
 
-      // labels need work. angle turning needs maffs.
+      // rotate the objective labels
       axis
         .selectAll(".labels")
         .attr("font-size", "15px")
@@ -314,12 +308,25 @@ export const RadarChart = ({
       );
     });
 
+    const dots = linesData(data).map((datum) => {
+        return datum.map((d) => {
+            return [d[0], d[1]]
+        })
+    })
+
+    const poDots = linesData(data).map((d) => {
+      return [d[0], d[1]];
+    });
+
+    console.log("DOTS",dots.flat()) // has 9 bc comes from linesdatum
+    console.log("podots", poDots.flat()) // has 6 bc comes podots
+
     // function to change the fill_opacity. Right now only rudimentary.
     const fill_opacity = () => {
       if (lines.length > 5) {
         return 0.0;
       } else {
-        return 0.5;
+        return 0.35;
       }
     };
 
@@ -356,6 +363,7 @@ export const RadarChart = ({
       .append("g")
       .attr("class", "radarWrapper");
 
+    // TODO: check for redundancies
     // append the backgrounds from the solution points
     blobWrapper
       .append("path")
@@ -395,7 +403,7 @@ export const RadarChart = ({
       .selectAll("path")
       .data(
         data.values.map((d, i) => {
-          console.log("data values", data.values);
+          //console.log("data values", data.values);
           return { index: i, ...d };
         })
       )
@@ -425,6 +433,29 @@ export const RadarChart = ({
         const tmp = activeIndices.concat(datum.index);
         handleSelection(tmp);
       });
+
+      //attr("cx", function(d,i){ return rScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
+//     const dotsflat = dots.flat()
+    // add po circles. Have to write it properly too..
+//    selection
+//      .append("g")
+//      .selectAll("path")
+//      .data(
+//        data.values.map((d, i) => {
+//          //console.log("data values", data.values);
+//          return { index: i, ...d };
+//        })
+//      )
+//      .enter()
+//      .append("circle")
+//      .attr("class", "poCircles")
+//      .attr("transform", `translate(${centerX} ${centerY})`)
+//      .attr("cx", (_,i) => Math.cos(dotsflat[i][i])*angleSlice)
+//      .attr("cy", (_,i) => Math.sin(dotsflat[i][i])*angleSlice)
+//      .attr("r", 5)
+//      .attr("stroke", "red");
+//
+
   }, [selection, data, dimensions, activeIndices]); // add data and active one
 
   useEffect(() => {
@@ -444,10 +475,24 @@ export const RadarChart = ({
     // selection from filter is not empty. Here you would add the legend with values for selected
     if (!highlightSelect.empty()) {
       console.log(highlightSelect.data()[0].value[0]); // näin pääsee käsiksi valittujen pisteiden datoihin
+
+      let showableNumbers = highlightSelect.data()[0].value;
+      console.log(showableNumbers);
+
       highlightSelect
         .attr("stroke-width", "8px")
         .attr("stroke", "red")
         .style("fill_opacity", 1);
+
+      // jotain joka vain näyttää toiminnallisuuden. TODO: do it properly.
+      selection
+        .append("g")
+        .attr("class", "numbers")
+        .append("text")
+        .attr("x", 700)
+        .attr("y", 400)
+        .text(() => showableNumbers.toString())
+        .style("fill", "black");
 
       // jotain tämän tyylistä, vaatii ajattelua.
       //        highlightSelect.enter().append('circle').
