@@ -21,8 +21,8 @@ interface RadarChartProps {
 
 // default choices: Nadir is in the middle, axises are turned so their goal is on the outline, drawing RadarChart.
 const defaultVisuals = {
-  inverseAxis: true,
-  turnAxis: true,
+  inverseAxis: true, // just noticed if we have this false, aka ideal in the middle, obj areas are not correct. TODO: find the bug.
+  turnAxis: true, // this false works ok, no bug here.
   radarOrSpider: true,
 };
 
@@ -101,9 +101,14 @@ export const RadarChart = ({
   useEffect(() => {
     SetActiveIndices(selectedIndices);
   }, [selectedIndices]);
-  // TODO: Now need to take a new look on this and start from cleaner state.
 
-  let radScale = useCallback(() => {
+  // TODO: Now need to take a new look on this and start from cleaner state.
+  // Ok the logic has bigger overlaps and issues...
+  // seems like we actually want 2 different radscales, one which the axises call and one which the datapoints call, but they
+  // MUST end up doing the same idea.
+
+  // this needs to be mutable incase of inverseAxis.
+  let radScaleAxis = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
       let end = 0;
@@ -122,7 +127,8 @@ export const RadarChart = ({
     });
   }, [data]);
 
-  let radScaleInv = useCallback(() => {
+  // this is stupid way to turn the axises and datapoints that made the bug with ideal in origo.
+  const radScaleInv = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = 0;
       let end = radius;
@@ -141,7 +147,8 @@ export const RadarChart = ({
     });
   }, [data]);
 
-  let radScale_fix = useCallback(() => {
+  // radScales for datapoints.
+  const radScaleData = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
       let end = 0;
@@ -159,12 +166,14 @@ export const RadarChart = ({
     });
   }, [data]);
 
+  // calls radScalesData, for datapoints
   const radScales = useCallback(() => {
     return data.directions.map((_, i) => {
-      return radScale_fix()[i];
+      return radScaleData()[i];
     });
-  }, [data, radScale_fix]);
+  }, [data, radScaleData]);
 
+  // makes bandScales or each of the objectives. Sets the names and the ranges of the axises without scaling them yet.
   const rband = useCallback(
     () =>
       scaleBand()
@@ -173,14 +182,16 @@ export const RadarChart = ({
     [dimensions, data]
   );
 
+  // Makes the scaled axises. Calls radScale which will scale the objectives.
   const bandScales = useCallback(() => {
     return data.directions.map((_, i) => {
-      return axisLeft(radScale()[i]); //.ticks(ticks);
+      return axisLeft(radScaleAxis()[i]); //.ticks(ticks);
     });
-  }, [data, radScale]);
+  }, [data, radScaleAxis]);
 
+  // if true, we inverse axises. Means that if true nadir is in the middle, if false ideal is in the middle.
   if (inverseAxis === true) {
-    radScale = radScaleInv;
+    radScaleAxis = radScaleInv;
   }
 
   // TODO: Turn labels, add margins
@@ -278,6 +289,7 @@ export const RadarChart = ({
         );
     });
 
+    // draw the outline circle for radarchart, do not for spider.
     if (radarOrSpider === true) {
       const axisGrid = g.append("g").attr("class", "axisCircle");
       // draw the background circle
@@ -286,7 +298,6 @@ export const RadarChart = ({
         .data(range(1, 2))
         .enter()
         .append("circle")
-        .attr("class", "gridCircle")
         .attr("r", () => radius)
         .style("stroke", "black")
         .style("fill-opacity", 0.0);
@@ -295,7 +306,7 @@ export const RadarChart = ({
     const linesData = (dataset: ObjectiveData) =>
       dataset.values.map((datum) => {
         return datum.value.map((v, i) => {
-          return [angleSlice * i, radScales()[i](v)];
+          return [angleSlice * i, radScales()[i](v)]; // call radScales for data points
         });
       });
 
@@ -308,18 +319,23 @@ export const RadarChart = ({
       );
     });
 
-    const dots = linesData(data).map((datum) => {
-        return datum.map((d) => {
-            return [d[0], d[1]]
-        })
-    })
+    const dotData = (dataset: ObjectiveData) =>
+      dataset.values.map((datum) => {
+        return datum.value.map((v, i) => {
+          // itseasisssa nämä taitaa olla järjestyksessä (theta, r)
+          let polarcoords = [angleSlice * i, radScales()[i](v)];
+          let x = polarcoords[1] * Math.cos(polarcoords[0]);
+          let y = polarcoords[1] * Math.sin(polarcoords[0]);
+          console.log("X;Y", x, y);
+          return [x, y]; // call radScales for data points
+        });
+      });
 
-    const poDots = linesData(data).map((d) => {
-      return [d[0], d[1]];
+    const dots = dotData(data).map((datum) => {
+      return datum.map((d) => {
+        return [d[0], d[1]];
+      });
     });
-
-    console.log("DOTS",dots.flat()) // has 9 bc comes from linesdatum
-    console.log("podots", poDots.flat()) // has 6 bc comes podots
 
     // function to change the fill_opacity. Right now only rudimentary.
     const fill_opacity = () => {
@@ -368,7 +384,6 @@ export const RadarChart = ({
     blobWrapper
       .append("path")
       .attr("class", "radarArea")
-      //.attr('transform', `translate(${centerX} ${centerY})`)
       .attr("d", (_, i) => lines[i])
       .attr("fill", (_, i) => colors[i])
       .attr("fill-opacity", fill_opacity)
@@ -434,27 +449,46 @@ export const RadarChart = ({
         handleSelection(tmp);
       });
 
-      //attr("cx", function(d,i){ return rScale(d.value) * Math.cos(angleSlice*i - Math.PI/2); })
-//     const dotsflat = dots.flat()
+    const dotsflat = dots.flat(); // flatten the dots list for easier use
+    console.log("DOTS", dotsflat);
+
+    const tooltip = g.append('text').attr('class',  'tooltip').style('opacity', 0)
+        .attr("transform", `translate(0 0) rotate (-90 0 0)`) // not sure why rotation is needed.
+
     // add po circles. Have to write it properly too..
-//    selection
-//      .append("g")
-//      .selectAll("path")
-//      .data(
-//        data.values.map((d, i) => {
-//          //console.log("data values", data.values);
-//          return { index: i, ...d };
-//        })
-//      )
-//      .enter()
-//      .append("circle")
-//      .attr("class", "poCircles")
-//      .attr("transform", `translate(${centerX} ${centerY})`)
-//      .attr("cx", (_,i) => Math.cos(dotsflat[i][i])*angleSlice)
-//      .attr("cy", (_,i) => Math.sin(dotsflat[i][i])*angleSlice)
-//      .attr("r", 5)
-//      .attr("stroke", "red");
-//
+    // Should add the visible circles and then make invisible circles to show the tooltips.
+    selection
+      .append("g")
+      .selectAll("path")
+      .data(dotsflat)
+      .enter()
+      .append("circle")
+      .attr("class", "poCircles")
+      .attr("transform", `translate(${centerX} ${centerY}) rotate (-90)`) // not sure why rotation is needed.
+      .attr("cx", (_, i) => dotsflat[i][0])
+      .attr("cy", (_, i) => dotsflat[i][1])
+      .attr('id', (_, i) => "pocircle"+i)
+      .attr("r", 5)
+      .attr("fill", "red")
+      .style('pointer-events', 'all')
+      .on('mouseover', (d) => {
+        let newX = parseFloat(select("#pocircle0").attr('cx')) - 10;
+        //let newX = parseFloat(i);
+        let newY = parseFloat(select("#pocircle0").attr('cy')) - 10;
+        console.log(newX, newY)
+        console.log(d)
+        tooltip.attr('x', newX)
+				.attr('y', newY)
+        //.attr("transform", `translate(0 0) rotate(0 0 0)`) // not sure why rotation is needed.
+				.text("45")
+				.transition().duration(200)
+				.style('opacity', 1);
+      })
+      .on("mouseout", function(){
+			tooltip.transition().duration(200)
+				.style("opacity", 0);
+		});
+
 
   }, [selection, data, dimensions, activeIndices]); // add data and active one
 
