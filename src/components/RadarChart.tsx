@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { select, selectAll, Selection, pointer } from "d3-selection";
-import { scaleLinear, scaleBand, scaleOrdinal, scaleRadial } from "d3-scale";
-import { line, lineRadial, curveLinearClosed } from "d3-shape";
-import { axisBottom, axisLeft, axisTop, axisRight } from "d3-axis";
-import { range, max } from "d3-array";
+import { select, selectAll, Selection } from "d3-selection";
+import { scaleLinear, scaleBand } from "d3-scale";
+import { lineRadial, curveLinearClosed } from "d3-shape";
+import { axisLeft } from "d3-axis";
+import { range } from "d3-array";
 
 import "d3-transition";
 import "./Svg.css";
-import { ObjectiveData, ObjectiveDatum } from "../types/ProblemTypes";
+import { ObjectiveData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface RadarChartProps {
@@ -20,16 +20,11 @@ interface RadarChartProps {
   // possible axisOrder Prop
 }
 
+// default is nadir in center and chart is radarChart with the circle wrapping the axises.
 const defaultVisuals = {
-  inverseAxis: true, 
-  //turnAxis: true, 
+  nadirAtCenter: true,
   radarOrSpider: true,
 };
-
-// TODO:
-// päätä docu tyyli, google jos jaksaa niin hienosti kommentoida.
-// koodiin siisteys, kommentointi
-// fix axis labels, need to add margins to svg
 
 const defaultDimensions = {
   chartHeight: 800,
@@ -62,24 +57,31 @@ export const RadarChart = ({
   // color table. 0 index def color, 1 index highlight color, 2 index selected color
   let colors = ["#69b3a2", "pink", "red"];
 
-  // set user preferences or default settings.
-  let inverseAxis: boolean,  radarOrSpider: boolean;
+  // set user preferences or use default settings.
+  let nadirAtCenter: boolean, radarOrSpider: boolean;
   if (userPrefForVisuals === undefined) {
-    inverseAxis = defaultVisuals.inverseAxis;
-    //turnAxis = defaultVisuals.turnAxis; // don't know if this makes any sense anymore
+    nadirAtCenter = defaultVisuals.nadirAtCenter;
     radarOrSpider = defaultVisuals.radarOrSpider;
   }
-  inverseAxis = userPrefForVisuals[0];
-  //turnAxis = userPrefForVisuals[1];
+  nadirAtCenter = userPrefForVisuals[0];
   radarOrSpider = userPrefForVisuals[1];
-
-  const oldSol = oldAlternative;
-  const offset = dimensions.marginTop; 
 
   // States
   const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
   const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
+
+  const oldSol = oldAlternative; // get the oldAlternative
+  const offset = dimensions.marginTop + 10; // offset for margins
+  const renderH =
+    dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
+  const renderW =
+    dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight;
+  const allAxis = data.names.map((name, _) => name), //Names of each axis
+    total = allAxis.length, //The number of different axes
+    radius = Math.min(renderW / 2, renderH / 2) - offset, //Radius of the outermost circle
+    angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
+  const angleDeg = 360 / total; // angleSlice in degrees
 
   useEffect(() => {
     SetActiveIndices(selectedIndices);
@@ -90,14 +92,14 @@ export const RadarChart = ({
     return data.ideal.map((_, i) => {
       let start = 0;
       let end = radius;
-      if (data.directions[i] === -1 ) {
+      if (data.directions[i] === -1) {
         start = radius;
         end = 0;
       }
-      if (inverseAxis === false){
+      if (nadirAtCenter === false) {
         start = radius;
         end = 0;
-        if (data.directions[i] === -1 ) {
+        if (data.directions[i] === -1) {
           start = 0;
           end = radius;
         }
@@ -109,21 +111,21 @@ export const RadarChart = ({
         ])
         .range([start, end]);
     });
-  }, [data, inverseAxis]);
+  }, [data, nadirAtCenter, radius]);
 
   // this scales the data and turns them accordingly to preferred center, default is nadir at center.
   const radScaleData = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
       let end = 0;
-      if (data.directions[i] === -1 ){
+      if (data.directions[i] === -1) {
         start = 0;
         end = radius;
       }
-      if (inverseAxis === false){
+      if (nadirAtCenter === false) {
         start = 0;
         end = radius;
-        if (data.directions[i] === -1 ) {
+        if (data.directions[i] === -1) {
           start = radius;
           end = 0;
         }
@@ -135,7 +137,7 @@ export const RadarChart = ({
         ])
         .range([start, end]);
     });
-  }, [data, inverseAxis]);
+  }, [data, nadirAtCenter, radius]);
 
   // makes bandScales or each of the objectives. Sets the names and the ranges of the axises without scaling them yet.
   const rband = useCallback(
@@ -143,29 +145,15 @@ export const RadarChart = ({
       scaleBand()
         .domain(data.names.map((name) => name))
         .range([0, radius]),
-    [data]
+    [data, radius]
   );
 
   // Makes the scaled axises. Calls radScale which will scale the objectives.
   const axisScales = useCallback(() => {
     return data.directions.map((_, i) => {
-      return axisLeft(radScaleAxis()[i]); //.ticks(ticks);
+      return axisLeft(radScaleAxis()[i]).ticks(4);
     });
-  }, [data]);
-
-  const renderH =
-    dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
-  const renderW =
-    dimensions.chartWidth + dimensions.marginLeft + dimensions.marginRight;
-  const allAxis = data.names.map((name, _) => name), //Names of each axis
-    total = allAxis.length, //The number of different axes
-    radius = Math.min(renderW / 2, renderH / 2) - offset, //Radius of the outermost circle
-    angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
-
-  const offsetx = -15;
-  const offsety = -5;
-  // angleSlice in degrees
-  const angleDeg = 360 / total;
+  }, [data, radScaleAxis]);
 
   useEffect(() => {
     SetData(objectiveData);
@@ -189,6 +177,9 @@ export const RadarChart = ({
 
     const centerX = renderW / 2 - offset;
     const centerY = renderH / 2 - offset;
+    // offsets for ticks
+    const offsetTickX = 15;
+    const offsetTickY = 10;
 
     // helper to use with anything chart related that is not interactive with data.
     const chart = selection
@@ -202,8 +193,7 @@ export const RadarChart = ({
       };
 
       // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
-      const axis = 
-        selection
+      const axis = selection
         .append("g")
         .attr("class", "axises")
         .attr(
@@ -214,20 +204,21 @@ export const RadarChart = ({
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
         )
-        .call(axisScales()[i].tickSize(6)); // this turns these the same way but I lost the text labels
+        .call(axisScales()[i].tickSizeOuter(0));
 
       // turn the tick labels
       axis
         .selectAll("text")
-        .style("text-anchor", "start") // end, niin menee 0 akseli hyvin muut huonosti.
+        .style("text-anchor", "start")
         .attr("transform", () => {
           if (i === 0) {
-            return `translate( ${offsetx} 0 ) `;
+            return `translate( ${-offsetTickX - 5} 0 ) `;
           }
-          return `translate( ${offsetx} 0 ) rotate(${rotateLabels(i)} 0 0 ) `;
+          return `translate( ${-offsetTickX} 0 ) rotate(${rotateLabels(
+            i
+          )} 0 0 ) `;
         });
-
-      axis.selectAll("text").attr("font-size", "15px");
+      axis.selectAll("text").attr("font-size", "17px");
       axis
         .append("text")
         .attr("class", "labels")
@@ -240,17 +231,21 @@ export const RadarChart = ({
       // rotate the objective labels
       axis
         .selectAll(".labels")
-        .attr("font-size", "15px")
-        .attr(
-          "transform",
-          `translate( 0 ${offsety} ) rotate(${rotateLabels(i)} 0 0 ) `
-        );
+        .attr("font-size", "18px")
+        .attr("transform", () => {
+          if (i === 0) {
+            return `translate(0 ${-offsetTickY} ) `;
+          }
+          return `translate( 30 ${offsetTickY} ) rotate(${rotateLabels(
+            i
+          )} 0 0 ) `;
+        });
     });
 
     // draw the outline circle for radarchart, do not for spider.
-    if (radarOrSpider === true) {
+    if (radarOrSpider) {
       chart
-      .selectAll("circle")
+        .selectAll("circle")
         .data(range(1, 2))
         .enter()
         .append("circle")
@@ -259,10 +254,11 @@ export const RadarChart = ({
         .style("fill-opacity", 0.0);
     }
 
+    // create linesdata from a dataset in polar coordinates for linesRadial
     const linesData = (dataset: ObjectiveData) =>
       dataset.values.map((datum) => {
         return datum.value.map((v, i) => {
-          return [angleSlice * i, radScaleData()[i](v)]; // call radScales for data points
+          return [angleSlice * i, radScaleData()[i](v)]; // call radScaleData for data points
         });
       });
     const linesRadial = linesData(data).map((datum) => {
@@ -273,7 +269,7 @@ export const RadarChart = ({
       );
     });
 
-    // outline for the oldAlternative. TODO: decide on good color. Grey gets overrun by darker colors,
+    // outline for the oldSolution
     if (oldSol !== undefined) {
       const oldSolution = linesData(oldSol).map((datum) => {
         return lineRadial().curve(curveLinearClosed)(
@@ -282,8 +278,8 @@ export const RadarChart = ({
           })
         );
       });
-
-     chart 
+      // draw the oldAlternative
+      chart
         .selectAll(".oldSolution")
         .data(oldSol.values)
         .enter()
@@ -296,8 +292,8 @@ export const RadarChart = ({
         .style("fill", "none");
     }
 
-    //Create a wrapper for the blobs
-  chart
+    // Draw the solutions
+    chart
       .selectAll(".radarArea")
       .data(data.values)
       .enter()
@@ -307,16 +303,16 @@ export const RadarChart = ({
       .attr("fill", colors[0])
       .attr("fill-opacity", 0)
       .on("mouseover", function () {
-        //Diddm all blobs
+        //Dim all areas
         selectAll(".radarArea")
           .transition()
           .duration(200)
           .style("fill-opacity", 0.0);
-        //Bring back the hovered over blob
+        //Bring back the hovered over area
         select(this).transition().duration(200).style("fill-opacity", 0.8);
       })
       .on("mouseout", function () {
-        //Bring back all blobs
+        //Bring back all areas
         selectAll(".radarArea")
           .transition()
           .duration(200)
@@ -342,7 +338,6 @@ export const RadarChart = ({
       .attr("stroke-width", "15px")
       .attr("pointer-events", "visibleStroke")
       .on("mouseenter", (_, datum) => {
-        // here maybe the color?
         SetHoverTarget(datum.index);
       })
       .on("mouseleave", () => {
@@ -358,13 +353,12 @@ export const RadarChart = ({
         const tmp = activeIndices.concat(datum.index);
         handleSelection(tmp);
       });
-  }, [selection, data, dimensions, activeIndices]); // add data and active one
+  }, [selection, data, dimensions, activeIndices]);
 
   useEffect(() => {
     if (!selection) {
       return;
     }
-
     // none selected, reset colors for not selected
     if (hoverTarget === -1) {
       const resetSelection = selection
@@ -373,7 +367,6 @@ export const RadarChart = ({
         .filter((_, i) => {
           return !activeIndices.includes(i);
         });
-
       // check not empty
       if (!resetSelection.empty()) {
         resetSelection.attr("stroke-width", "5px").attr("stroke", "#69b3a2");
@@ -381,7 +374,6 @@ export const RadarChart = ({
       return;
       // end effect
     }
-
     // darken hover target
     const hoverSelection = selection
       .selectAll(".radarArea")
@@ -405,18 +397,13 @@ export const RadarChart = ({
     const highlightSelect = selection
       .selectAll(".radarArea")
       .data(data.values)
-      .filter((d, i) => {
-        console.log("selected d, i", d, i);
+      .filter((_, i) => {
         return activeIndices.includes(i);
       });
 
-    // selection from filter is not empty. Here you would add the legend with values for selected
+    // selection from filter is not empty
     if (!highlightSelect.empty()) {
-      console.log(highlightSelect.data()[0].value[0]); // näin pääsee käsiksi valittujen pisteiden datoihin
-
-      highlightSelect
-        .attr("stroke-width", "5px")
-        .attr("stroke", "red")
+      highlightSelect.attr("stroke-width", "5px").attr("stroke", "red");
     }
     // dim not selected
     const dimSelection = selection
