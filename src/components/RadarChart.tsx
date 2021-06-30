@@ -192,7 +192,7 @@ export const RadarChart = ({
         return -i * angleDeg;
       };
 
-      // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
+      // transform each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
       const axis = selection
         .append("g")
         .attr("class", "axises")
