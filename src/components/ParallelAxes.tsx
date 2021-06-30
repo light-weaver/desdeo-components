@@ -13,6 +13,7 @@ import { active } from "d3-transition";
 
 interface ParallelAxesProps {
   objectiveData: ObjectiveData;
+  oldAlternative?: ObjectiveData; // old alternative solution
   dimensionsMaybe?: RectDimensions;
   selectedIndices: number[];
   handleSelection: (x: number[]) => void;
@@ -29,6 +30,7 @@ const defaultDimensions = {
 
 const ParallelAxes = ({
   objectiveData,
+  oldAlternative,
   dimensionsMaybe,
   selectedIndices,
   handleSelection,
@@ -47,6 +49,7 @@ const ParallelAxes = ({
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
   const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
 
+  const oldSol = oldAlternative;
   useEffect(() => {
     SetData(objectiveData);
   }, [objectiveData]);
@@ -96,7 +99,7 @@ const ParallelAxes = ({
         .append("svg")
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", `0 0 ${renderW} ${renderH}`)
-        .attr("viewBox", `0 0 ${renderW} ${renderH}`)
+        //.attr("viewBox", `0 0 ${renderW} ${renderH}`)
         .classed("svg-content", true);
 
       // update selection
@@ -105,7 +108,9 @@ const ParallelAxes = ({
     }
     // clear the svg
     selection.selectAll("*").remove();
-
+    const chart = selection
+      .append("g")
+      .attr("transform", `translate( 0 ${dimensions.marginTop})`);
     // position the axises
     // y-axis
     data.names.map((name, i) => {
@@ -113,7 +118,7 @@ const ParallelAxes = ({
         .append("g")
         .attr(
           "transform",
-          `translate(${x().call(x, name)! + x().bandwidth()} ${
+          `translate(${x().call(x, name) as number + x().bandwidth()} ${
             dimensions.marginTop
           })`
         )
@@ -131,13 +136,13 @@ const ParallelAxes = ({
     });
 
     // create lines data
-    const linesData = data.values.map((datum) => {
-      return datum.value.map((v, i) => {
-        return [x().call(x, data.names[i])!, ys()[i](v)];
+    const linesData = (dataset: ObjectiveData) =>
+      dataset.values.map((datum) => {
+        return datum.value.map((v, i) => {
+          return [x().call(x, data.names[i]) as number, ys()[i](v)];
+        });
       });
-    });
-
-    const lines = linesData.map((datum) => {
+    const lines = linesData(data).map((datum) => {
       return line()(
         datum.map((d) => {
           return [d[0], d[1]];
@@ -145,6 +150,29 @@ const ParallelAxes = ({
       );
     });
 
+    // outline for the oldAlternative. TODO: decide on good color. Grey gets overrun by darker colors,
+    if (oldSol !== undefined) {
+      const oldSolution = linesData(oldSol).map((datum) => {
+        return line()(
+          datum.map((d) => {
+            return [d[0], d[1]];
+          })
+        );
+      });
+     chart 
+        .selectAll(".oldSolution")
+        .data(oldSol.values)
+        .enter()
+        .append("g")
+        .attr("class", "oldSolution")
+        .append("path")
+        .attr("d", (_, i) => oldSolution[i])
+        .style("stroke-width", 3 + "px")
+        .style("stroke", "black")
+        .style("fill", "none");
+    }
+
+    
     // add thin visual paths, these will be visible
     selection
       .append("g")

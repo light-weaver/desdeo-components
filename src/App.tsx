@@ -22,7 +22,14 @@ function App() {
       <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataSimple3Objectives}
-          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
+        <ParallelAxes
+          objectiveData={exampleDataSimple3Objectives}
           selectedIndices={selected}
           handleSelection={setSelected}
         />
@@ -31,7 +38,14 @@ function App() {
       <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataTen4Objectives}
-          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
+        <ParallelAxes
+          objectiveData={exampleDataTen4Objectives}
           selectedIndices={selected}
           handleSelection={setSelected}
         />
@@ -40,8 +54,16 @@ function App() {
       <div style={{ width: "800px", height: "800px", float: "left" }}>
         <RadarChart
           objectiveData={exampleDataSingle5Objectives}
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
           oldAlternative={exampleSingle5OldAlternative}
-          userPrefForVisuals={[true, true, true]} // [inverseAxis, turnAxis, radarOrSpider]. Nadir in the middle, axises turned, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
+        <ParallelAxes
+          objectiveData={exampleDataSingle5Objectives}
+          oldAlternative={exampleSingle5OldAlternative}
           selectedIndices={selected}
           handleSelection={setSelected}
         />

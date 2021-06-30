@@ -20,30 +20,16 @@ interface RadarChartProps {
   // possible axisOrder Prop
 }
 
-// default choices: Nadir is in the middle, axises are turned so their goal is on the outline, drawing RadarChart.
-/** 
-* true, false, true
-* maximum values in middle not taking account maximization or minimization
-*
-* false, true, true
-* ideal in the middle, axises turned so their goal is in the middle.
-*
-* false, false, true
-* minimum values in the middle not taking into account maximization or minimization
-*
-* **/
 const defaultVisuals = {
   inverseAxis: true, 
-  turnAxis: true, 
+  //turnAxis: true, 
   radarOrSpider: true,
 };
 
 // TODO:
 // päätä docu tyyli, google jos jaksaa niin hienosti kommentoida.
 // koodiin siisteys, kommentointi
-// fix/selvitä oikeasti kuinka monta skaalaa tarvitsee. Uusi skaala, bugi vältetty, mutta aika kökköä
 // fix axis labels, need to add margins to svg
-
 
 const defaultDimensions = {
   chartHeight: 800,
@@ -77,72 +63,45 @@ export const RadarChart = ({
   let colors = ["#69b3a2", "pink", "red"];
 
   // set user preferences or default settings.
-  let inverseAxis: boolean, turnAxis: boolean, radarOrSpider: boolean;
+  let inverseAxis: boolean,  radarOrSpider: boolean;
   if (userPrefForVisuals === undefined) {
     inverseAxis = defaultVisuals.inverseAxis;
-    turnAxis = defaultVisuals.turnAxis;
+    //turnAxis = defaultVisuals.turnAxis; // don't know if this makes any sense anymore
     radarOrSpider = defaultVisuals.radarOrSpider;
   }
   inverseAxis = userPrefForVisuals[0];
-  turnAxis = userPrefForVisuals[1];
-  radarOrSpider = userPrefForVisuals[2];
-
-  // labeleista.. pallot päihin joita hover niin näkee arvot
-  // vai valitsemalla solutionin näkee tarkat arvot jossain?
-  // TODO: fix objective labels. find a way to offset them so they fit to the picture and are not on top of the
-  // tick labels.
+  //turnAxis = userPrefForVisuals[1];
+  radarOrSpider = userPrefForVisuals[1];
 
   const oldSol = oldAlternative;
+  const offset = dimensions.marginTop; 
 
+  // States
   const [data, SetData] = useState(objectiveData); // if changes, the whole graph is re-rendered
-
   const [hoverTarget, SetHoverTarget] = useState(-1); // keeps track of hover target
   const [activeIndices, SetActiveIndices] = useState<number[]>(selectedIndices);
-
-  const offset = 20; // clumsy solution
 
   useEffect(() => {
     SetActiveIndices(selectedIndices);
   }, [selectedIndices]);
 
-  // TODO: Now need to take a new look on this and start from cleaner state.
-  // Ok the logic has bigger overlaps and issues...
-  // seems like we actually want 2 different radscales, one which the axises call and one which the datapoints call, but they
-  // MUST end up doing the same idea.
-
-  // this needs to be mutable incase of inverseAxis.
-  // This is not even used
-  let radScaleAxis = useCallback(() => {
-    return data.ideal.map((_, i) => {
-      let start = radius;
-      let end = 0;
-
-      if (data.directions[i] === -1 && turnAxis === true) {
-        start = 0;
-        end = radius;
-      }
-
-      return scaleLinear()
-        .domain([
-          data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
-          data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
-        ])
-        .range([start, end]);
-    });
-  }, [data]);
-
-  // this is stupid way to turn the axises and datapoints that made the bug with ideal in origo.
-  const radScaleInv = useCallback(() => {
+  // this scales the axises and turns them accordingly to preferred center, default is nadir at center.
+  const radScaleAxis = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = 0;
       let end = radius;
-
-      // this is needed because each axis has to be taken account where is ideal and turn the axis 
-      if (data.directions[i] === -1 && turnAxis === true) {
+      if (data.directions[i] === -1 ) {
         start = radius;
         end = 0;
       }
-
+      if (inverseAxis === false){
+        start = radius;
+        end = 0;
+        if (data.directions[i] === -1 ) {
+          start = 0;
+          end = radius;
+        }
+      }
       return scaleLinear()
         .domain([
           data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
@@ -150,37 +109,24 @@ export const RadarChart = ({
         ])
         .range([start, end]);
     });
-  }, [data]);
+  }, [data, inverseAxis]);
 
-  // radScales for datapoints.
-  const radScaleDataInv = useCallback(() => {
+  // this scales the data and turns them accordingly to preferred center, default is nadir at center.
+  const radScaleData = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
       let end = 0;
-
-      // this is needed because each axis has to be taken account where is ideal and turn data accordingly
-      if (data.directions[i] === -1 && turnAxis === true) {
+      if (data.directions[i] === -1 ){
         start = 0;
         end = radius;
       }
-      return scaleLinear()
-        .domain([
-          data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
-          data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
-        ])
-        .range([start, end]);
-    });
-  }, [data]);
-
-  let radScaleData = useCallback(() => {
-    return data.ideal.map((_, i) => {
-      let start = 0;
-      let end = radius;
-
-      // this is needed because each axis has to be taken account where is ideal and turn data accordingly
-      if (data.directions[i] === -1 && turnAxis === true) {
-        start = radius;
-        end = 0;
+      if (inverseAxis === false){
+        start = 0;
+        end = radius;
+        if (data.directions[i] === -1 ) {
+          start = radius;
+          end = 0;
+        }
       }
       return scaleLinear()
         .domain([
@@ -189,15 +135,7 @@ export const RadarChart = ({
         ])
         .range([start, end]);
     });
-  }, [data]);
-
-
-  // calls radScalesData, for datapoints
-  const radScales = useCallback(() => {
-    return data.directions.map((_, i) => {
-      return radScaleData()[i];
-    });
-  }, [data, radScaleData]);
+  }, [data, inverseAxis]);
 
   // makes bandScales or each of the objectives. Sets the names and the ranges of the axises without scaling them yet.
   const rband = useCallback(
@@ -205,23 +143,15 @@ export const RadarChart = ({
       scaleBand()
         .domain(data.names.map((name) => name))
         .range([0, radius]),
-    [dimensions, data]
+    [data]
   );
 
   // Makes the scaled axises. Calls radScale which will scale the objectives.
-  const bandScales = useCallback(() => {
+  const axisScales = useCallback(() => {
     return data.directions.map((_, i) => {
       return axisLeft(radScaleAxis()[i]); //.ticks(ticks);
     });
-  }, [data, radScaleAxis]);
-
-  // if true, we inverse axises. Means that if true nadir is in the middle, if false ideal is in the middle.
-  if (inverseAxis) {
-    radScaleAxis = radScaleInv;
-    radScaleData = radScaleDataInv;
-  }
-
-  // TODO: Turn labels, add margins
+  }, [data]);
 
   const renderH =
     dimensions.chartHeight + dimensions.marginBottom + dimensions.marginTop;
@@ -233,7 +163,7 @@ export const RadarChart = ({
     angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
 
   const offsetx = -15;
-  const offsety = -10;
+  const offsety = -5;
   // angleSlice in degrees
   const angleDeg = 360 / total;
 
@@ -248,7 +178,6 @@ export const RadarChart = ({
         .append("svg")
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", `${-offset} ${-offset} ${renderW} ${renderH}`)
-        //.attr("viewBox", `${-offset} -20 ${renderW} ${renderH}`)
         .classed("svg-content", true);
 
       // update selection
@@ -273,7 +202,8 @@ export const RadarChart = ({
       };
 
       // transfrom each axis to center of our g. For each axis we need to substract the bandwidth and rotate the axis by the angle in degrees.
-      const axis = selection
+      const axis = 
+        selection
         .append("g")
         .attr("class", "axises")
         .attr(
@@ -284,7 +214,7 @@ export const RadarChart = ({
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
         )
-        .call(bandScales()[i].tickSize(6)); // this turns these the same way but I lost the text labels
+        .call(axisScales()[i].tickSize(6)); // this turns these the same way but I lost the text labels
 
       // turn the tick labels
       axis
@@ -332,12 +262,10 @@ export const RadarChart = ({
     const linesData = (dataset: ObjectiveData) =>
       dataset.values.map((datum) => {
         return datum.value.map((v, i) => {
-          return [angleSlice * i, radScales()[i](v)]; // call radScales for data points
+          return [angleSlice * i, radScaleData()[i](v)]; // call radScales for data points
         });
       });
-
-    // could do common data both for lines and PO circles
-    const lines = linesData(data).map((datum) => {
+    const linesRadial = linesData(data).map((datum) => {
       return lineRadial().curve(curveLinearClosed)(
         datum.map((d) => {
           return [d[0], d[1]];
@@ -345,17 +273,7 @@ export const RadarChart = ({
       );
     });
 
-//    // function to change the fill_opacity. Right now only rudimentary.
-//    const fill_opacity = () => {
-//      if (lines.length > 5) {
-//        return 0.0;
-//      } else {
-//        return 0.0;
-//      }
-//    };
-
     // outline for the oldAlternative. TODO: decide on good color. Grey gets overrun by darker colors,
-    // black might be too dark.
     if (oldSol !== undefined) {
       const oldSolution = linesData(oldSol).map((datum) => {
         return lineRadial().curve(curveLinearClosed)(
@@ -385,7 +303,7 @@ export const RadarChart = ({
       .enter()
       .append("path")
       .attr("class", "radarArea")
-      .attr("d", (_, i) => lines[i])
+      .attr("d", (_, i) => linesRadial[i])
       .attr("fill", colors[0])
       .attr("fill-opacity", 0)
       .on("mouseover", function () {
@@ -418,7 +336,7 @@ export const RadarChart = ({
       .append("path")
       .attr("class", "pathDetector")
       .attr("transform", `translate(${centerX} ${centerY})`)
-      .attr("d", (_, i) => lines[i])
+      .attr("d", (_, i) => linesRadial[i])
       .attr("fill", "none")
       .attr("stroke", "none")
       .attr("stroke-width", "15px")
