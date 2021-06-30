@@ -17,18 +17,33 @@ interface RadarChartProps {
   userPrefForVisuals: boolean[]; // list of user preferences for the charts properties like where is ideal or nadir.
   selectedIndices: number[]; // selected points
   handleSelection: (x: number[]) => void; // handler for selected points
+  // possible axisOrder Prop
 }
 
 // default choices: Nadir is in the middle, axises are turned so their goal is on the outline, drawing RadarChart.
+/** 
+* true, false, true
+* maximum values in middle not taking account maximization or minimization
+*
+* false, true, true
+* ideal in the middle, axises turned so their goal is in the middle.
+*
+* false, false, true
+* minimum values in the middle not taking into account maximization or minimization
+*
+* **/
 const defaultVisuals = {
-  inverseAxis: true, // just noticed if we have this false, aka ideal in the middle, obj areas are not correct. TODO: find the bug.
-  turnAxis: true, // this false works ok, no bug here.
+  inverseAxis: true, 
+  turnAxis: true, 
   radarOrSpider: true,
 };
 
 // TODO:
-// labelit vaakatasoon
+// päätä docu tyyli, google jos jaksaa niin hienosti kommentoida.
 // koodiin siisteys, kommentointi
+// fix/selvitä oikeasti kuinka monta skaalaa tarvitsee. Uusi skaala, bugi vältetty, mutta aika kökköä
+// fix axis labels, need to add margins to svg
+
 
 const defaultDimensions = {
   chartHeight: 800,
@@ -58,20 +73,8 @@ export const RadarChart = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
 
-  // color table
-  let colors = [
-    "#4B0082",
-    "#FF69B4",
-    "#00FF00",
-    "#8B4513",
-    "#4682B4",
-    "#FF1493",
-    "#00FFFF",
-    "#228B22",
-    "#FFE4C4",
-    "#0000FF",
-    "#FFFF00",
-  ];
+  // color table. 0 index def color, 1 index highlight color, 2 index selected color
+  let colors = ["#69b3a2", "pink", "red"];
 
   // set user preferences or default settings.
   let inverseAxis: boolean, turnAxis: boolean, radarOrSpider: boolean;
@@ -108,6 +111,7 @@ export const RadarChart = ({
   // MUST end up doing the same idea.
 
   // this needs to be mutable incase of inverseAxis.
+  // This is not even used
   let radScaleAxis = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
@@ -133,6 +137,7 @@ export const RadarChart = ({
       let start = 0;
       let end = radius;
 
+      // this is needed because each axis has to be taken account where is ideal and turn the axis 
       if (data.directions[i] === -1 && turnAxis === true) {
         start = radius;
         end = 0;
@@ -148,11 +153,12 @@ export const RadarChart = ({
   }, [data]);
 
   // radScales for datapoints.
-  const radScaleData = useCallback(() => {
+  const radScaleDataInv = useCallback(() => {
     return data.ideal.map((_, i) => {
       let start = radius;
       let end = 0;
 
+      // this is needed because each axis has to be taken account where is ideal and turn data accordingly
       if (data.directions[i] === -1 && turnAxis === true) {
         start = 0;
         end = radius;
@@ -165,6 +171,26 @@ export const RadarChart = ({
         .range([start, end]);
     });
   }, [data]);
+
+  let radScaleData = useCallback(() => {
+    return data.ideal.map((_, i) => {
+      let start = 0;
+      let end = radius;
+
+      // this is needed because each axis has to be taken account where is ideal and turn data accordingly
+      if (data.directions[i] === -1 && turnAxis === true) {
+        start = radius;
+        end = 0;
+      }
+      return scaleLinear()
+        .domain([
+          data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
+          data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
+        ])
+        .range([start, end]);
+    });
+  }, [data]);
+
 
   // calls radScalesData, for datapoints
   const radScales = useCallback(() => {
@@ -190,8 +216,9 @@ export const RadarChart = ({
   }, [data, radScaleAxis]);
 
   // if true, we inverse axises. Means that if true nadir is in the middle, if false ideal is in the middle.
-  if (inverseAxis === true) {
+  if (inverseAxis) {
     radScaleAxis = radScaleInv;
+    radScaleData = radScaleDataInv;
   }
 
   // TODO: Turn labels, add margins
@@ -204,7 +231,6 @@ export const RadarChart = ({
     total = allAxis.length, //The number of different axes
     radius = Math.min(renderW / 2, renderH / 2) - offset, //Radius of the outermost circle
     angleSlice = (Math.PI * 2) / total; //The width in radians of each "slice"
-  const ticks = 4;
 
   const offsetx = -15;
   const offsety = -10;
@@ -234,7 +260,9 @@ export const RadarChart = ({
 
     const centerX = renderW / 2 - offset;
     const centerY = renderH / 2 - offset;
-    const g = selection
+
+    // helper to use with anything chart related that is not interactive with data.
+    const chart = selection
       .append("g")
       .attr("transform", "translate(" + centerX + ", " + centerY + ")");
 
@@ -291,10 +319,8 @@ export const RadarChart = ({
 
     // draw the outline circle for radarchart, do not for spider.
     if (radarOrSpider === true) {
-      const axisGrid = g.append("g").attr("class", "axisCircle");
-      // draw the background circle
-      axisGrid
-        .selectAll("circle")
+      chart
+      .selectAll("circle")
         .data(range(1, 2))
         .enter()
         .append("circle")
@@ -319,32 +345,14 @@ export const RadarChart = ({
       );
     });
 
-    const dotData = (dataset: ObjectiveData) =>
-      dataset.values.map((datum) => {
-        return datum.value.map((v, i) => {
-          // itseasisssa nämä taitaa olla järjestyksessä (theta, r)
-          let polarcoords = [angleSlice * i, radScales()[i](v)];
-          let x = polarcoords[1] * Math.cos(polarcoords[0]);
-          let y = polarcoords[1] * Math.sin(polarcoords[0]);
-          console.log("X;Y", x, y);
-          return [x, y]; // call radScales for data points
-        });
-      });
-
-    const dots = dotData(data).map((datum) => {
-      return datum.map((d) => {
-        return [d[0], d[1]];
-      });
-    });
-
-    // function to change the fill_opacity. Right now only rudimentary.
-    const fill_opacity = () => {
-      if (lines.length > 5) {
-        return 0.0;
-      } else {
-        return 0.35;
-      }
-    };
+//    // function to change the fill_opacity. Right now only rudimentary.
+//    const fill_opacity = () => {
+//      if (lines.length > 5) {
+//        return 0.0;
+//      } else {
+//        return 0.0;
+//      }
+//    };
 
     // outline for the oldAlternative. TODO: decide on good color. Grey gets overrun by darker colors,
     // black might be too dark.
@@ -356,15 +364,14 @@ export const RadarChart = ({
           })
         );
       });
-      selection
-        .append("g")
+
+     chart 
         .selectAll(".oldSolution")
         .data(oldSol.values)
         .enter()
         .append("g")
         .attr("class", "oldSolution")
         .append("path")
-        .attr("transform", `translate(${centerX} ${centerY})`)
         .attr("d", (_, i) => oldSolution[i])
         .style("stroke-width", 3 + "px")
         .style("stroke", "black")
@@ -372,27 +379,21 @@ export const RadarChart = ({
     }
 
     //Create a wrapper for the blobs
-    const blobWrapper = g
-      .selectAll(".radarWrapper")
+  chart
+      .selectAll(".radarArea")
       .data(data.values)
       .enter()
-      .append("g")
-      .attr("class", "radarWrapper");
-
-    // TODO: check for redundancies
-    // append the backgrounds from the solution points
-    blobWrapper
       .append("path")
       .attr("class", "radarArea")
       .attr("d", (_, i) => lines[i])
-      .attr("fill", (_, i) => colors[i])
-      .attr("fill-opacity", fill_opacity)
+      .attr("fill", colors[0])
+      .attr("fill-opacity", 0)
       .on("mouseover", function () {
         //Diddm all blobs
         selectAll(".radarArea")
           .transition()
           .duration(200)
-          .style("fill-opacity", 0.1);
+          .style("fill-opacity", 0.0);
         //Bring back the hovered over blob
         select(this).transition().duration(200).style("fill-opacity", 0.8);
       })
@@ -401,16 +402,8 @@ export const RadarChart = ({
         selectAll(".radarArea")
           .transition()
           .duration(200)
-          .style("fill-opacity", fill_opacity);
+          .style("fill-opacity", 0.0);
       });
-
-    //Create the outlines
-    blobWrapper
-      .append("path")
-      .attr("d", (_, i) => lines[i])
-      .style("stroke-width", 4 + "px")
-      .style("stroke", (_, i) => colors[i])
-      .style("fill", "none");
 
     // add invis paths to trigger mouse events.
     selection
@@ -418,12 +411,10 @@ export const RadarChart = ({
       .selectAll("path")
       .data(
         data.values.map((d, i) => {
-          //console.log("data values", data.values);
           return { index: i, ...d };
         })
       )
       .enter()
-      //      blobWrapper // this already has origo at centerX/Y.
       .append("path")
       .attr("class", "pathDetector")
       .attr("transform", `translate(${centerX} ${centerY})`)
@@ -433,6 +424,7 @@ export const RadarChart = ({
       .attr("stroke-width", "15px")
       .attr("pointer-events", "visibleStroke")
       .on("mouseenter", (_, datum) => {
+        // here maybe the color?
         SetHoverTarget(datum.index);
       })
       .on("mouseleave", () => {
@@ -448,49 +440,43 @@ export const RadarChart = ({
         const tmp = activeIndices.concat(datum.index);
         handleSelection(tmp);
       });
-
-    const dotsflat = dots.flat(); // flatten the dots list for easier use
-    console.log("DOTS", dotsflat);
-
-    const tooltip = g.append('text').attr('class',  'tooltip').style('opacity', 0)
-        .attr("transform", `translate(0 0) rotate (-90 0 0)`) // not sure why rotation is needed.
-
-    // add po circles. Have to write it properly too..
-    // Should add the visible circles and then make invisible circles to show the tooltips.
-    selection
-      .append("g")
-      .selectAll("path")
-      .data(dotsflat)
-      .enter()
-      .append("circle")
-      .attr("class", "poCircles")
-      .attr("transform", `translate(${centerX} ${centerY}) rotate (-90)`) // not sure why rotation is needed.
-      .attr("cx", (_, i) => dotsflat[i][0])
-      .attr("cy", (_, i) => dotsflat[i][1])
-      .attr('id', (_, i) => "pocircle"+i)
-      .attr("r", 5)
-      .attr("fill", "red")
-      .style('pointer-events', 'all')
-      .on('mouseover', (d) => {
-        let newX = parseFloat(select("#pocircle0").attr('cx')) - 10;
-        //let newX = parseFloat(i);
-        let newY = parseFloat(select("#pocircle0").attr('cy')) - 10;
-        console.log(newX, newY)
-        console.log(d)
-        tooltip.attr('x', newX)
-				.attr('y', newY)
-        //.attr("transform", `translate(0 0) rotate(0 0 0)`) // not sure why rotation is needed.
-				.text("45")
-				.transition().duration(200)
-				.style('opacity', 1);
-      })
-      .on("mouseout", function(){
-			tooltip.transition().duration(200)
-				.style("opacity", 0);
-		});
-
-
   }, [selection, data, dimensions, activeIndices]); // add data and active one
+
+  useEffect(() => {
+    if (!selection) {
+      return;
+    }
+
+    // none selected, reset colors for not selected
+    if (hoverTarget === -1) {
+      const resetSelection = selection
+        .selectAll(".radarArea")
+        .data(data.values)
+        .filter((_, i) => {
+          return !activeIndices.includes(i);
+        });
+
+      // check not empty
+      if (!resetSelection.empty()) {
+        resetSelection.attr("stroke-width", "5px").attr("stroke", "#69b3a2");
+      }
+      return;
+      // end effect
+    }
+
+    // darken hover target
+    const hoverSelection = selection
+      .selectAll(".radarArea")
+      .data(data.values)
+      .filter((_, i) => {
+        return i === hoverTarget && !activeIndices.includes(i);
+      });
+
+    // check not empty
+    if (!hoverSelection.empty()) {
+      hoverSelection.attr("stroke-width", "5px").attr("stroke", "pink");
+    }
+  }, [hoverTarget, selection, activeIndices]);
 
   useEffect(() => {
     if (!selection) {
@@ -510,30 +496,21 @@ export const RadarChart = ({
     if (!highlightSelect.empty()) {
       console.log(highlightSelect.data()[0].value[0]); // näin pääsee käsiksi valittujen pisteiden datoihin
 
-      let showableNumbers = highlightSelect.data()[0].value;
-      console.log(showableNumbers);
-
       highlightSelect
-        .attr("stroke-width", "8px")
+        .attr("stroke-width", "5px")
         .attr("stroke", "red")
-        .style("fill_opacity", 1);
+    }
+    // dim not selected
+    const dimSelection = selection
+      .selectAll(".radarArea")
+      .data(data.values)
+      .filter((_, i) => {
+        return !activeIndices.includes(i);
+      });
 
-      // jotain joka vain näyttää toiminnallisuuden. TODO: do it properly.
-      selection
-        .append("g")
-        .attr("class", "numbers")
-        .append("text")
-        .attr("x", 700)
-        .attr("y", 400)
-        .text(() => showableNumbers.toString())
-        .style("fill", "black");
-
-      // jotain tämän tyylistä, vaatii ajattelua.
-      //        highlightSelect.enter().append('circle').
-      //            attr('cx', 100)
-      //        .attr('cy', (_,i) => 100 + i*25)
-      //        .attr('r', 7)
-      //        .style('fill', colors[0])
+    // selection from filter is not empty
+    if (!dimSelection.empty()) {
+      dimSelection.attr("stroke-width", "5px").attr("stroke", "#69b3a2");
     }
   }, [activeIndices, selection]);
 
