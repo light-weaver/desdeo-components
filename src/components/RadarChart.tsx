@@ -421,3 +421,5 @@ export const RadarChart = ({
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
+
+export default RadarChart;
