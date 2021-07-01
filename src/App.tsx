@@ -1,7 +1,13 @@
-// import React from "react";
 import HorizontalBars from "./components/HorizontalBars";
 import ParallelAxes from "./components/ParallelAxes";
-import { exampleDataTen4Objectives } from "./data/ExampleData";
+import { RadarChart } from "./components/RadarChart";
+import {
+  exampleDataSimple3Objectives,
+  exampleDataTen4Objectives,
+  exampleDataSingle3Objectives,
+  exampleDataSingle5Objectives,
+  exampleSingle5OldAlternative
+} from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -13,16 +19,51 @@ function App() {
 
   return (
     <>
-      <div style={{ width: "800px", float: "left" }}>
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
+        <RadarChart
+          objectiveData={exampleDataSimple3Objectives}
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
+        <ParallelAxes
+          objectiveData={exampleDataSimple3Objectives}
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+      <br></br>
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
+        <RadarChart
+          objectiveData={exampleDataTen4Objectives}
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
         <ParallelAxes
           objectiveData={exampleDataTen4Objectives}
           selectedIndices={selected}
           handleSelection={setSelected}
         />
       </div>
-      <div style={{ width: "800px", float: "left" }}>
+      <br></br>
+      <div style={{ width: "800px", height: "800px", float: "left" }}>
+        <RadarChart
+          objectiveData={exampleDataSingle5Objectives}
+          userPrefForVisuals={[true, true]} // [inverseAxis, radarOrSpider]. Nadir in the middle, radarChart.
+          oldAlternative={exampleSingle5OldAlternative}
+          selectedIndices={selected}
+          handleSelection={setSelected}
+        />
+      </div>
+        <div style={{ width: "800px", float: "left" }}>
         <ParallelAxes
-          objectiveData={exampleDataTen4Objectives}
+          objectiveData={exampleDataSingle5Objectives}
+          oldAlternative={exampleSingle5OldAlternative}
           selectedIndices={selected}
           handleSelection={setSelected}
         />

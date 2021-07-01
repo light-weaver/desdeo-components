@@ -1,10 +1,24 @@
 import { ObjectiveData } from "../types/ProblemTypes";
 
+
+export const exampleSingle5OldAlternative: ObjectiveData = {
+  values: [
+    {
+      selected: false,
+      value: [50, 0.15, -400, 20000, 150],
+    },
+  ],
+  names: ["Price", "Quality", "Time", "Efficiency", "???"],
+  directions: [1, -1, 1, -1, -1],
+  ideal: [25, 0.95, -871, 150000, 300],
+  nadir: [101, 0.11, 801, 520, 100],
+};
+
 export const exampleDataSingle5Objectives: ObjectiveData = {
   values: [
     {
       selected: false,
-      value: [50, 0.2, -500, 25000, 200],
+      value: [40, 0.2, -500, 25000, 200],
     },
   ],
   names: ["Price", "Quality", "Time", "Efficiency", "???"],
@@ -24,6 +38,27 @@ export const exampleDataSingle3Objectives: ObjectiveData = {
   directions: [1, -1, 1],
   ideal: [25, 0.95, -871],
   nadir: [101, 0.11, 801],
+};
+
+export const exampleDataSimple3Objectives: ObjectiveData = {
+  values: [
+    {
+      selected: false,
+      value: [45, 0.2, 100],
+    },
+    {
+      selected: false,
+      value: [75, 0.4, 80],
+    },
+    {
+      selected: false,
+      value: [101, 0.6, 40],
+    },
+  ],
+  names: ["Price", "Quality", "Time"],
+  directions: [1, -1, 1],
+  ideal: [25, 0.95, 150],
+  nadir: [101, 0.11, 1],
 };
 
 export const exampleDataTen4Objectives: ObjectiveData = {

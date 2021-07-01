@@ -12,11 +12,13 @@ ReactDOM.render(
   document.getElementById("root")
 );
 
+
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
-*/
 
+*/
 export { default as HorizontalBars } from "./components/HorizontalBars";
 export { default as ParallelAxes } from "./components/ParallelAxes";
+export { default as RadarChart } from "./components/RadarChart";
