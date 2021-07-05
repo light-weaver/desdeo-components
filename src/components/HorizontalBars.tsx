@@ -9,7 +9,7 @@ import { ObjectiveData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface HorizontalBarsProps {
-  objectiveData: ObjectiveData;
+objectiveData: ObjectiveData;
   setReferencePoint:
     | React.Dispatch<React.SetStateAction<number[]>>
     | ((x: number[]) => void);
@@ -169,7 +169,7 @@ const HorizontalBars = ({
         .attr("transform", (d) => {
           return `translate(${
             dimensions.marginLeft + dimensions.chartWidth + 10
-          }, ${y()(d.name)! + y().bandwidth() / 2})`;
+          }, ${y()(d.name) as number + y().bandwidth() / 2})`;
         })
         .text((d) => `${d.name} ${d.direction === -1 ? "(max)" : "(min)️"}`)
         .attr("font-size", "14px")
@@ -213,7 +213,7 @@ const HorizontalBars = ({
           }
         })
         .attr("y", (d) => {
-          return y()(d.name)!;
+          return y()(d.name) as number;
         })
         .attr("x", (d, i) => {
           if (d.direction === -1) {
@@ -235,8 +235,8 @@ const HorizontalBars = ({
       enter
         .append("line")
         .attr("class", "infoPointer")
-        .attr("y1", (d) => y()(d.name)!)
-        .attr("y2", (d) => y()(d.name)! + y().bandwidth())
+        .attr("y1", (d) => y()(d.name) as number)
+        .attr("y2", (d) => y()(d.name) as number + y().bandwidth())
         .attr("x1", (d, i) => {
           if (d.direction === -1) {
             return xs()[i](d.value) + dimensions.marginLeft;
@@ -259,8 +259,8 @@ const HorizontalBars = ({
       enter
         .append("line")
         .attr("class", "preferencePointer")
-        .attr("y1", (d) => y()(d.name)!)
-        .attr("y2", (d) => y()(d.name)! + y().bandwidth())
+        .attr("y1", (d) => y()(d.name) as number)
+        .attr("y2", (d) => y()(d.name) as number + y().bandwidth())
         .attr("x1", (d, i) => {
           if (d.direction === -1) {
             return xs()[i](d.value) + dimensions.marginLeft;
@@ -298,7 +298,7 @@ const HorizontalBars = ({
             d.direction === -1
               ? xs()[i](d.value) + dimensions.marginLeft
               : xs_rev()[i](d.value) + dimensions.marginLeft
-          }, ${y()(d.name)! + y().bandwidth() / 2})`;
+          }, ${y()(d.name) as number + y().bandwidth() / 2})`;
         })
         .text(
           (d) =>
@@ -314,7 +314,7 @@ const HorizontalBars = ({
         .attr("transform", `translate(${dimensions.marginLeft}, 0)`)
         .attr("width", dimensions.chartWidth)
         .attr("y", (d) => {
-          return y()(d.name)!;
+          return y()(d.name) as number;
         })
         .attr("x", 0)
         .attr("height", y().bandwidth)

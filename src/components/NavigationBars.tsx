@@ -1,33 +1,16 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
 import { scaleLinear, scaleBand } from "d3-scale";
-import { axisBottom } from "d3-axis";
+import { axisBottom, axisLeft } from "d3-axis";
 import "d3-transition";
 import { easeCubic } from "d3-ease";
 import "./Svg.css";
-import { ObjectiveData } from "../types/ProblemTypes";
+import { ObjectiveData, ProblemInfo } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 
-/* let's copypaste the problemInfo type here to get started. 
- */
-type ProblemType = "Analytical" | "Placeholder";
-type MinOrMax = 1 | -1;
-
-interface ProblemInfo {
-  problemId: number;
-  problemName: string;
-  problemType: ProblemType;
-  objectiveNames: string[];
-  variableNames: string[];
-  nObjectives: number;
-  ideal: number[];
-  nadir: number[];
-  minimize: MinOrMax[];
-}
-
 interface NavigationBarsProps {
-  problemInfo?: ProblemInfo;
+  problemInfo: ProblemInfo;
   upperBound: number[][];
   lowerBound: number[][];
   totalSteps: number;
@@ -44,11 +27,11 @@ interface NavigationBarsProps {
 }
 
 const defaultDimensions = {
-  chartHeight: 600,
-  chartWidth: 800,
+  chartHeight: 900,
+  chartWidth: 1200,
   marginLeft: 80,
-  marginRight: 160,
-  marginTop: 0,
+  marginRight: 150,
+  marginTop: 250,
   marginBottom: 0,
 };
 
@@ -93,6 +76,39 @@ export const NavigationBars = ({
 
   // axises and stuff here
 
+  // y-axis needs to scale the objectives
+  const yAxis = useCallback(()=>{
+    return data.objectiveNames.map((_,i) => {
+      return scaleLinear()
+        .domain([
+          data.ideal[i] < data.nadir[i] ? data.ideal[i] : data.nadir[i], // min
+          data.ideal[i] > data.nadir[i] ? data.ideal[i] : data.nadir[i], // max
+        ])
+        .range([0, dimensions.chartHeight]);
+    })
+  }, [dimensions, data])
+
+  // Again drawing on top of each other, move later
+  const yAxises = useCallback(() => {
+    return data.objectiveNames.map((_,i) => {
+      return axisLeft(yAxis()[i]);
+    })
+  }, [data, yAxis])
+
+  // x-axis only cares about the steps.
+  const xAxis = useCallback(()=> {
+    return data.objectiveNames.map(()=>{
+      return scaleLinear().
+        domain([currentstep, allSteps]).range([0,dimensions.chartWidth])
+  })                         
+  }, [data, dimensions]) 
+
+  const xAxises = useCallback(() => {
+    return data.objectiveNames.map((_,i) => {
+      return axisBottom(xAxis()[i])
+    })
+  }, [data, xAxis])
+
 
     // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
@@ -117,7 +133,23 @@ export const NavigationBars = ({
       console.log("svg clear!");
       selection.selectAll("*").remove();
 
+      const chart = selection.append('g')
+      //.attr("transform", `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`);
+
     // stuff here
+      data.objectiveNames.map((_, i) => {
+        
+        // MIETI
+        chart.append('g').attr('transform', `translate( ${dimensions.marginLeft} ${dimensions.marginTop + 250 * i})`)
+        .call(xAxises()[i])
+
+        // näiden koko että täyttää objektien välit
+        chart.append('g').attr('transform', `translate( ${dimensions.marginLeft}  ${300*i})`)
+        .call(yAxises()[i])
+        
+
+
+      })
 
 
     }

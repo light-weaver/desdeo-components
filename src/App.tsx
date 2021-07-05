@@ -41,12 +41,12 @@ function App() {
 
   return (
     <>
-      <div style={{ width: "800px", height: "800px", float: "left" }}>
+      <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars
-          //problemInfo={exampleProblem3ObjectiveData}
+          problemInfo={exampleProblem3ObjectiveData}
           upperBound={problemData.upperBounds}
           lowerBound={problemData.lowerBounds}
-          totalSteps={3} // def esim. 100, nyt kolme koska kolmedatapistettä
+          totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
           step={1} // n. 1-100, nyt 1-3.
           referencePoints={problemData.refPoints}
           boundary={[5,0.3]} // boundary for obj1, obj2
@@ -54,7 +54,6 @@ function App() {
           handleBound={setSelected}
         />
       </div>
-
       <br></br>
         <div style={{ width: "800px", float: "left" }}>
         <HorizontalBars

@@ -199,7 +199,7 @@ export const RadarChart = ({
         .attr(
           "transform",
           `translate(${
-            rband().call(rband, name)! + centerX - i * rband().bandwidth()
+            rband().call(rband, name) as number + centerX - i * rband().bandwidth()
           }, 0 )
           rotate( ${i * angleDeg} 0 ${centerY} )
         `
