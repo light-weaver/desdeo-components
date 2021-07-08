@@ -203,13 +203,23 @@ export const NavigationBars = ({
 
       });
       
-      console.log("agsdga", uBound)
-      const boundslist = [
-         lBound[0], uBound[0],
-         lBound[1], uBound[1]
-      ]
-      console.log("DDD",boundslist)
+//      console.log("agsdga", uBound)
+//      const boundslist = [
+//         lBound[0], uBound[0],
+//         lBound[1], uBound[1]
+//      ]
+//      console.log("DDD",boundslist)
+//
+//      const bList = [
+//        [uBound[0][0]],
+//        lBound[0],
+//        uBound[0].reverse().splice(0, uBound[0].length-1)
+//      ]
 
+//      console.log(bList)
+
+      // for i in (indexit)
+      // for i of (valuet)
 
       /*
        * Jos piirrän polygoneilla niin muistetaan logiikka: piste kerrallaan vastapäivään.
@@ -225,17 +235,15 @@ export const NavigationBars = ({
        *  step x-1 ja upperBound toka vika
        *  jne kunnes kaikki käyty paitsi upperBound eka
        */
-       let polydata = [
-        { x: "0", y: 10 },
-        { x: "0", y: 0 },
-        { x: "1", y: 1.5 },
-        { x: "2", y: 2 },
-        { x: "2", y: 3.2 },
-        { x: "1", y: 7.5 },]
         
       // piirtää kaikki mutta päällekkäin, jos laitetaan data erilailla niin sitten paremmin
       // TODO: kun enemmän pisteitä boundseissa kun tavoitteita niin hajoaa
-      ideal.map((_, i) => {
+      const len = uBound[0].length;
+      console.log("YLA",uBound)
+      console.log("ALA",lBound)
+      console.log(len)
+
+      data.objectiveNames.map((_, i) => {
         const enter = selection
           .append("g")
           .attr(
@@ -243,24 +251,37 @@ export const NavigationBars = ({
             `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
           )
           .selectAll("polygon")
-          .data(boundslist)
+          .data(data.lowerBounds)
           .enter();
 
+                //return [xAxis()[i](d.x), yAxis()[i](d.y)].join(",");
+          // ei taida ees toimia siten miten ajattelen.. tee alusta
         enter
           .append("polygon")
           .attr("transform", `translate(0 ${300 * i} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("fill", "darkgrey")
           .attr("points", function (d) {
+            //console.log("tämä d",d)
             return d
-              .map(function (d,i) {
-                console.log("#",d,i) // tänkun fiksais ettei joka kerta tota ekaa pistettä piirretä.. se tarvitaan koska polygon aloittaa aina (0,0).
-                let start = ["0", yAxis()[i](ideal[i])].join(',');
-                //console.log(start)
-                let end = [xAxis()[i](i.toString()), yAxis()[i](d)].join(",");
-                //console.log(end)
-                console.log("!!",start, end)
-                let path = start + (',') + end;
-                console.log("PATH",path)
+              .map(function () {
+                //console.log("tämä d 2",d)
+                let i;
+                let path;
+                // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
+                for (i = 0; i < 1; i++) {
+                    path = [xAxis()[i](i.toString()), yAxis()[i](uBound[0][i]),
+                    xAxis()[i](i.toString()), yAxis()[i](lBound[0][i])].join(',');
+                }
+                // lowerBounds
+                for (i = 1; i < lBound[0].length; i++){
+                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[0][i])].join(',');
+                }
+                // upperBounds
+                for (i = 2; i > 0; i--){
+                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[0][i])].join(',');
+                }
+
+                console.log("PAATH", path)
                 return path;
               })
               .join(" ");
