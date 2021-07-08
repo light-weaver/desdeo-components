@@ -65,23 +65,52 @@ export const NavigationBars = ({
   );
   console.log(problemInfo);
   // const [data, SetData] = useState(problemInfo);
+  
+  // data object needs to:
+  // 1. be iterable
+  // 2. have bounds split for different objectives or be in correct order so calling by index is not a problem
 
+  // temp data object
+  const newDataForm = {
+    objectiveNames: ["X", "Y", "Z"],
+  upperBounds: [
+    [10,5,2], // objective 1
+    [1.0,0.6,0.3], // objective 2
+    [5,3,1], // objective 1
+  ],
+  lowerBounds: [
+    [0,1.5,2], // objective 1
+    [0.1,0.2,0.3], // objective 2
+    [0,0.5,1], // objective 1
+  ],
+  refPoints: [
+    [8,5], // aluksi vain 1 entinen piste
+    [0.2,0.2], // 
+    [8,5], // aluksi vain 1 entinen piste
+  ]
+  };
   // temp data object
   const Data = {
     objectiveNames: ["X", "Y", "Z"],
-    upperBounds: [
-      [10, 5, 2], // objective 1
-      [1.0, 0.6, 0.3], // objective 2
-    ],
-    lowerBounds: [
-      [0, 1.5, 2], // objective 1
-      [0.1, 0.2, 0.3], // objective 2
-    ],
-    refPoints: [
-      [8, 5], // aluksi vain 1 entinen piste
-      [0.2, 0.2], //
-    ],
+  upperBounds: [
+    [10,5,2], // objective 1
+    [1.0,0.6,0.3], // objective 2
+    [5,3,1], // objective 1
+  ],
+  lowerBounds: [
+    [0,1.5,2], // objective 1
+    [0.1,0.2,0.3], // objective 2
+    [0,0.5,1], // objective 1
+  ],
+  refPoints: [
+    [8,5], // aluksi vain 1 entinen piste
+    [0.2,0.2], // 
+    [8,5], // aluksi vain 1 entinen piste
+  ]
   };
+  
+  const [newData] = useState(newDataForm)
+
   const [data, SetData] = useState(Data);
 
 
@@ -243,7 +272,10 @@ export const NavigationBars = ({
       console.log("ALA",lBound)
       console.log(len)
 
-      data.objectiveNames.map((_, i) => {
+    
+      const drawableSteps = [Array.from(Array(steps).keys())]
+
+      data.objectiveNames.map((_, index) => {
         const enter = selection
           .append("g")
           .attr(
@@ -251,34 +283,35 @@ export const NavigationBars = ({
             `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
           )
           .selectAll("polygon")
-          .data(data.lowerBounds)
+          .data([drawableSteps]) // tälle viksumpi tapa
           .enter();
 
                 //return [xAxis()[i](d.x), yAxis()[i](d.y)].join(",");
           // ei taida ees toimia siten miten ajattelen.. tee alusta
         enter
           .append("polygon")
-          .attr("transform", `translate(0 ${300 * i} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("fill", "darkgrey")
           .attr("points", function (d) {
-            //console.log("tämä d",d)
+            console.log("tämä d",d)
             return d
-              .map(function () {
-                //console.log("tämä d 2",d)
+              .map(function (d) {
+                console.log("tämä d 2",d)
+                let j = index; // tämä kun vaihtaa objektien kesken
                 let i;
                 let path;
                 // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
                 for (i = 0; i < 1; i++) {
-                    path = [xAxis()[i](i.toString()), yAxis()[i](uBound[0][i]),
-                    xAxis()[i](i.toString()), yAxis()[i](lBound[0][i])].join(',');
+                    path = [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i]),
+                    xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
                 }
                 // lowerBounds
-                for (i = 1; i < lBound[0].length; i++){
-                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[0][i])].join(',');
+                for (i = 1; i < lBound[j].length; i++){
+                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
                 }
                 // upperBounds
-                for (i = 2; i > 0; i--){
-                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[0][i])].join(',');
+                for (i = uBound[j].length - 1; i > 0; i--){
+                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i])].join(',');
                 }
 
                 console.log("PAATH", path)
