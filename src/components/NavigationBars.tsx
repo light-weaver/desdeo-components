@@ -70,49 +70,20 @@ export const NavigationBars = ({
   // 1. be iterable
   // 2. have bounds split for different objectives or be in correct order so calling by index is not a problem
 
-  // temp data object
-  const newDataForm = {
-    objectiveNames: ["X", "Y", "Z"],
-  upperBounds: [
-    [10,5,2], // objective 1
-    [1.0,0.6,0.3], // objective 2
-    [5,3,1], // objective 1
-  ],
-  lowerBounds: [
-    [0,1.5,2], // objective 1
-    [0.1,0.2,0.3], // objective 2
-    [0,0.5,1], // objective 1
-  ],
-  refPoints: [
-    [8,5], // aluksi vain 1 entinen piste
-    [0.2,0.2], // 
-    [8,5], // aluksi vain 1 entinen piste
-  ]
-  };
+
   // temp data object
   const Data = {
-    objectiveNames: ["X", "Y", "Z"],
-  upperBounds: [
-    [10,5,2], // objective 1
-    [1.0,0.6,0.3], // objective 2
-    [5,3,1], // objective 1
-  ],
-  lowerBounds: [
-    [0,1.5,2], // objective 1
-    [0.1,0.2,0.3], // objective 2
-    [0,0.5,1], // objective 1
-  ],
-  refPoints: [
-    [8,5], // aluksi vain 1 entinen piste
-    [0.2,0.2], // 
-    [8,5], // aluksi vain 1 entinen piste
-  ]
+    problemInfo,
+    upperBound,
+    lowerBound,
+    referencePoints,
+    step,
+    boundary,
   };
   
-  const [newData] = useState(newDataForm)
 
   const [data, SetData] = useState(Data);
-
+  console.log("data", data)
 
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
@@ -120,9 +91,6 @@ export const NavigationBars = ({
   const [lBound] = useState(lowerBound);
   const allSteps = totalSteps;
   
-  const [nadir] = useState(problemInfo.nadir)
-  const [ideal] = useState(problemInfo.ideal)
-
   const allStepstemp = 10;
 
   let currentstep = 0;
@@ -132,49 +100,49 @@ export const NavigationBars = ({
 
   const [refPoints] = useState(referencePoints);
   const bounds = useState(boundary);
+  console.log(handleBound, handleReferencePoint)
 
-  // just to get rid of the warnings for now
-  console.log(
-    nadir,
-    ideal,
-    allSteps,
-    currentstep,
-    steps,
-    bounds,
-    data,
-    SetData,
-    uBound,
-    lBound,
-    dimensions,
-    setSelection,
-    selection,
-    refPoints
-  );
-  console.log(handleReferencePoint);
-  console.log(handleBound);
+  const ideal = data.problemInfo.ideal;
+  const nadir = data.problemInfo.nadir;
+  const minOrMax = data.problemInfo.minimize;
+  const objNames = data.problemInfo.objectiveNames;
 
   // axises and stuff here
-  //const whereIsY = dimensions.chartHeight / numberOfObjectives - 50;
+  const plotHeight = 250;
 
   // y-axis needs to scale the objectives
-  const yAxis = useCallback(() => {
-    return data.objectiveNames.map(() => {
+  const yAxis_rev = useCallback(() => {
+    return objNames.map((_,i) => {
       return scaleLinear()
-        .domain([10, 0]) // add ideal and nadirs
-        .range([0, 250]);
+        .domain([nadir[i], ideal[i]]) // add ideal and nadirs
+        .range([0, plotHeight]);
+    });
+  }, [dimensions, data]);
+  //
+  // y-axis needs to scale the objectives
+  const yAxis = useCallback(() => {
+    return objNames.map((_,i) => {
+      return scaleLinear()
+        .domain([nadir[i], ideal[i]]) // add ideal and nadirs
+        .range([plotHeight, 0]);
     });
   }, [dimensions, data]);
 
+
   const yAxises = useCallback(() => {
-    return data.objectiveNames.map((_, i) => {
+    return minOrMax.map((d, i) => {
+      if (d === -1){
+        return axisLeft(yAxis_rev()[i])
+      } else {
       return axisLeft(yAxis()[i]);
+      }
     });
-  }, [data, yAxis]);
+  }, [data, yAxis, yAxis_rev]);
 
   // x-axis only cares about the steps.
   // maybe use d3.scalePoint ?
   const xAxis = useCallback(() => {
-    return data.objectiveNames.map(() => {
+    return objNames.map(() => {
       return scalePoint()
         .domain(["0", "1", "2", "3", "4", "5"])
         .range([0, dimensions.chartWidth]);
@@ -182,7 +150,7 @@ export const NavigationBars = ({
   }, [data, dimensions]);
 
   const xAxises = useCallback(() => {
-    return data.objectiveNames.map((_, i) => {
+    return objNames.map((_, i) => {
       return axisBottom(xAxis()[i]);
     });
   }, [data, xAxis]);
@@ -217,7 +185,7 @@ export const NavigationBars = ({
         );
 
       // stuff here
-      data.objectiveNames.map((_, i) => {
+     objNames.map((_, i) => {
         // y
         chart
           .append("g")
@@ -232,24 +200,6 @@ export const NavigationBars = ({
 
       });
       
-//      console.log("agsdga", uBound)
-//      const boundslist = [
-//         lBound[0], uBound[0],
-//         lBound[1], uBound[1]
-//      ]
-//      console.log("DDD",boundslist)
-//
-//      const bList = [
-//        [uBound[0][0]],
-//        lBound[0],
-//        uBound[0].reverse().splice(0, uBound[0].length-1)
-//      ]
-
-//      console.log(bList)
-
-      // for i in (indexit)
-      // for i of (valuet)
-
       /*
        * Jos piirrän polygoneilla niin muistetaan logiikka: piste kerrallaan vastapäivään.
        *
@@ -275,7 +225,54 @@ export const NavigationBars = ({
     
       const drawableSteps = [Array.from(Array(steps).keys())]
 
-      data.objectiveNames.map((_, index) => {
+      const drawPolygons = (steps: number[], index: number) => {
+            console.log("tämä d 2",steps, index)
+
+            console.log("min or max", minOrMax[index])
+            if (minOrMax[index] === 1) {
+              let j = index; // tämä kun vaihtaa objektien kesken
+              let i;
+              let path;
+              // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
+              for (i = 0; i < 1; i++) {
+                  path = [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i]),
+                  xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
+              }
+              // lowerBounds
+              for (i = 1; i < lBound[j].length; i++){
+                  path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
+              }
+              // upperBounds
+              for (i = uBound[j].length - 1; i > 0; i--){
+                  path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i])].join(',');
+              }
+
+              console.log("Path MIN", path)
+              return path;
+            } else {
+              let j = index; // tämä kun vaihtaa objektien kesken
+              let i;
+              let path;
+              // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
+              for (i = 0; i < 1; i++) {
+                  path = [xAxis()[i](i.toString()), yAxis_rev()[i](uBound[j][i]),
+                  xAxis()[i](i.toString()), yAxis_rev()[i](lBound[j][i])].join(',');
+              }
+              // lowerBounds
+              for (i = 1; i < lBound[j].length; i++){
+                  path = path + (',') + [xAxis()[i](i.toString()), yAxis_rev()[i](lBound[j][i])].join(',');
+              }
+              // upperBounds
+              for (i = uBound[j].length - 1; i > 0; i--){
+                  path = path + (',') + [xAxis()[i](i.toString()), yAxis_rev()[i](uBound[j][i])].join(',');
+              }
+
+              console.log("Path MAX", path)
+              return path;
+            }
+      }
+
+      data.problemInfo.objectiveNames.map((_, index) => {
         const enter = selection
           .append("g")
           .attr(
@@ -286,37 +283,16 @@ export const NavigationBars = ({
           .data([drawableSteps]) // tälle viksumpi tapa
           .enter();
 
-                //return [xAxis()[i](d.x), yAxis()[i](d.y)].join(",");
-          // ei taida ees toimia siten miten ajattelen.. tee alusta
         enter
           .append("polygon")
           .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("fill", "darkgrey")
           .attr("points", function (d) {
-            console.log("tämä d",d)
+            //console.log("tämä d",d)
             return d
               .map(function (d) {
-                console.log("tämä d 2",d)
-                let j = index; // tämä kun vaihtaa objektien kesken
-                let i;
-                let path;
-                // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
-                for (i = 0; i < 1; i++) {
-                    path = [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i]),
-                    xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
-                }
-                // lowerBounds
-                for (i = 1; i < lBound[j].length; i++){
-                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
-                }
-                // upperBounds
-                for (i = uBound[j].length - 1; i > 0; i--){
-                    path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i])].join(',');
-                }
-
-                console.log("PAATH", path)
-                return path;
-              })
+                return drawPolygons(d, index)
+               })
               .join(" ");
           });
       });
