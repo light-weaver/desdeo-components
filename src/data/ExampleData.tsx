@@ -1,4 +1,16 @@
-import { ObjectiveData } from "../types/ProblemTypes";
+import { ObjectiveData, ProblemInfo   } from "../types/ProblemTypes";
+
+export const exampleProblem3ObjectiveData: ProblemInfo = {
+  problemId: 0,
+  problemName: "TestProblem",
+  problemType: "Placeholder",
+  objectiveNames: ["G1", "G2", "G3"],
+  variableNames: ["X", "Y", "Z"],
+  nObjectives: 3,
+  ideal: [10,2,-5],
+  nadir: [0, 0, 5],
+  minimize: [1,1,-1],
+}
 
 
 export const exampleSingle5OldAlternative: ObjectiveData = {

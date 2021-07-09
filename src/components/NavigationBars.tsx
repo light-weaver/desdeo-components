@@ -65,11 +65,10 @@ export const NavigationBars = ({
   );
   console.log(problemInfo);
   // const [data, SetData] = useState(problemInfo);
-  
+
   // data object needs to:
   // 1. be iterable
   // 2. have bounds split for different objectives or be in correct order so calling by index is not a problem
-
 
   // temp data object
   const Data = {
@@ -80,17 +79,16 @@ export const NavigationBars = ({
     step,
     boundary,
   };
-  
 
   const [data, SetData] = useState(Data);
-  console.log("data", data)
+  console.log("data", data);
 
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
   const [uBound] = useState(upperBound);
   const [lBound] = useState(lowerBound);
   const allSteps = totalSteps;
-  
+
   const allStepstemp = 10;
 
   let currentstep = 0;
@@ -100,7 +98,7 @@ export const NavigationBars = ({
 
   const [refPoints] = useState(referencePoints);
   const bounds = useState(boundary);
-  console.log(handleBound, handleReferencePoint)
+  console.log(handleBound, handleReferencePoint);
 
   const ideal = data.problemInfo.ideal;
   const nadir = data.problemInfo.nadir;
@@ -112,29 +110,28 @@ export const NavigationBars = ({
 
   // y-axis needs to scale the objectives
   const yAxis_rev = useCallback(() => {
-    return objNames.map((_,i) => {
+    return objNames.map((_, i) => {
       return scaleLinear()
         .domain([nadir[i], ideal[i]]) // add ideal and nadirs
         .range([0, plotHeight]);
     });
   }, [dimensions, data]);
   //
-  // y-axis needs to scale the objectives
+  // y-axis needs to scale the objectives. This means maximal is at the top.
   const yAxis = useCallback(() => {
-    return objNames.map((_,i) => {
+    return objNames.map((_, i) => {
       return scaleLinear()
-        .domain([nadir[i], ideal[i]]) // add ideal and nadirs
-        .range([plotHeight, 0]);
+        .domain([ideal[i], nadir[i]]) // add ideal and nadirs
+        .range([0, plotHeight]);
     });
   }, [dimensions, data]);
 
-
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
-      if (d === -1){
-        return axisLeft(yAxis_rev()[i])
+      if (d === -1) {
+        return axisLeft(yAxis_rev()[i]);
       } else {
-      return axisLeft(yAxis()[i]);
+        return axisLeft(yAxis()[i]);
       }
     });
   }, [data, yAxis, yAxis_rev]);
@@ -185,7 +182,8 @@ export const NavigationBars = ({
         );
 
       // stuff here
-     objNames.map((_, i) => {
+      objNames.map((d, i) => {
+        console.log(d);
         // y
         chart
           .append("g")
@@ -197,80 +195,101 @@ export const NavigationBars = ({
           .append("g")
           .attr("transform", `translate(0 ${250 + 300 * i} )`)
           .call(xAxises()[i]);
-
       });
-      
-      /*
-       * Jos piirrän polygoneilla niin muistetaan logiikka: piste kerrallaan vastapäivään.
-       *
-       *  eli eka piste vasen yläkulma 0,0 eli step 0 ja ideal/nadir eli siis upperBound eka
-       *  toka step 0  ja ideal/nadir eli siis lowerBound eka
-       *  sitten
-       *  step 1 ja lowerBound toka
-       *  step 2 ja lowerBound kolmas
-       *  jne kunnes
-       *
-       *  step x ja upperBound vika
-       *  step x-1 ja upperBound toka vika
-       *  jne kunnes kaikki käyty paitsi upperBound eka
-       */
-        
-      // piirtää kaikki mutta päällekkäin, jos laitetaan data erilailla niin sitten paremmin
+
+      chart
+        .append("g")
+        .selectAll("text")
+        .data(objNames)
+        .enter()
+        .append("text")
+        .text((d, i) => `${d} ${minOrMax[i] === -1 ? "(max)" : "(min)️"}`)
+        .attr("transform", (_, i) => {
+          return `translate( ${-70}  ${300 * i})`;
+        })
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold");
+
+
       // TODO: kun enemmän pisteitä boundseissa kun tavoitteita niin hajoaa
       const len = uBound[0].length;
-      console.log("YLA",uBound)
-      console.log("ALA",lBound)
-      console.log(len)
+      console.log("YLA", uBound);
+      console.log("ALA", lBound);
+      console.log(len);
 
-    
-      const drawableSteps = [Array.from(Array(steps).keys())]
+      const drawableSteps = [Array.from(Array(steps).keys())];
 
       const drawPolygons = (steps: number[], index: number) => {
-            console.log("tämä d 2",steps, index)
+        console.log("tämä d 2", steps, index);
 
-            console.log("min or max", minOrMax[index])
-            if (minOrMax[index] === 1) {
-              let j = index; // tämä kun vaihtaa objektien kesken
-              let i;
-              let path;
-              // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
-              for (i = 0; i < 1; i++) {
-                  path = [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i]),
-                  xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
-              }
-              // lowerBounds
-              for (i = 1; i < lBound[j].length; i++){
-                  path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](lBound[j][i])].join(',');
-              }
-              // upperBounds
-              for (i = uBound[j].length - 1; i > 0; i--){
-                  path = path + (',') + [xAxis()[i](i.toString()), yAxis()[i](uBound[j][i])].join(',');
-              }
+        console.log("min or max", minOrMax[index]);
+        if (minOrMax[index] === 1) {
+          let j = index; // tämä kun vaihtaa objektien kesken
+          let i;
+          let path;
+          // first step. 
+          for (i = 0; i < 1; i++) {
+            path = [
+              xAxis()[j](i.toString()),
+              yAxis()[j](uBound[j][i]),
+              xAxis()[j](i.toString()),
+              yAxis()[j](lBound[j][i]),
+            ].join(",");
+          }
+          // lowerBounds
+          for (i = 1; i < lBound[j].length; i++) {
+            path =
+              path +
+              "," +
+              [xAxis()[j](i.toString()), yAxis()[j](lBound[j][i])].join(",");
+          }
+          // upperBounds
+          for (i = uBound[j].length - 1; i > 0; i--) {
+            path =
+              path +
+              "," +
+              [xAxis()[j](i.toString()), yAxis()[j](uBound[j][i])].join(",");
+          }
+          console.log("MIN index", index)
+          console.log("Path MIN", path);
+          return path;
+        } else {
+          let j = index; // tämä kun vaihtaa objektien kesken
+          let i;
+          let path;
+          // first step. 
+          for (i = 0; i < 1; i++) {
+            path = [
+              xAxis()[j](i.toString()),
+              yAxis_rev()[j](uBound[j][i]),
+              xAxis()[j](i.toString()),
+              yAxis_rev()[j](lBound[j][i]),
+            ].join(",");
+          }
+          // lowerBounds
+          for (i = 1; i < lBound[j].length; i++) {
+            path =
+              path +
+              "," +
+              [xAxis()[j](i.toString()), yAxis_rev()[j](lBound[j][i])].join(
+                ","
+              );
+          }
+          // upperBounds
+          for (i = uBound[j].length - 1; i > 0; i--) {
+            path =
+              path +
+              "," +
+              [xAxis()[j](i.toString()), yAxis_rev()[j](uBound[j][i])].join(
+                ","
+              );
+          }
 
-              console.log("Path MIN", path)
-              return path;
-            } else {
-              let j = index; // tämä kun vaihtaa objektien kesken
-              let i;
-              let path;
-              // first step. This works only for the first objective rn. Ignoring the rest until better data comes.
-              for (i = 0; i < 1; i++) {
-                  path = [xAxis()[i](i.toString()), yAxis_rev()[i](uBound[j][i]),
-                  xAxis()[i](i.toString()), yAxis_rev()[i](lBound[j][i])].join(',');
-              }
-              // lowerBounds
-              for (i = 1; i < lBound[j].length; i++){
-                  path = path + (',') + [xAxis()[i](i.toString()), yAxis_rev()[i](lBound[j][i])].join(',');
-              }
-              // upperBounds
-              for (i = uBound[j].length - 1; i > 0; i--){
-                  path = path + (',') + [xAxis()[i](i.toString()), yAxis_rev()[i](uBound[j][i])].join(',');
-              }
-
-              console.log("Path MAX", path)
-              return path;
-            }
-      }
+          console.log("MAX index", index)
+          console.log("Path MAX", path);
+          return path;
+        }
+      };
 
       data.problemInfo.objectiveNames.map((_, index) => {
         const enter = selection
@@ -291,8 +310,8 @@ export const NavigationBars = ({
             //console.log("tämä d",d)
             return d
               .map(function (d) {
-                return drawPolygons(d, index)
-               })
+                return drawPolygons(d, index);
+              })
               .join(" ");
           });
       });

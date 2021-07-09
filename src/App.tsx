@@ -18,18 +18,39 @@ import { useState, useEffect } from "react";
 const problemData = {
   upperBounds: [
     [10,5,2], // objective 1
-    [1.0,0.6,0.3], // objective 2
+    [2.0,0.6,0.3], // objective 2
+    [5,3,1], // objective 3
   ],
   lowerBounds: [
     [0,1.5,2], // objective 1
     [0.1,0.2,0.3], // objective 2
+    [-5,0,1], // objective 3
   ],
   refPoints: [
     [8,5], // aluksi vain 1 entinen piste
     [0.2,0.2], // 
+    [8,5], // aluksi vain 1 entinen piste
   ]
 }
-
+// with 4 steps, should work when axises are fixed
+const problemData2 = {
+  upperBounds: [
+    [10,7,5,2], // objective 1
+    [2.0,0.8,0.6,0.3], // objective 2
+    [5,4,3,1], // objective 3
+  ],
+  lowerBounds: [
+    [0,0.5,1.5,2], // objective 1
+    [0.0,0.1,0.2,0.3], // objective 2
+    [-5,0.2,0.5,1], // objective 3
+  ],
+  refPoints: [
+    [8,5], // aluksi vain 1 entinen piste
+    [0.2,0.2], // 
+    [8,5], // aluksi vain 1 entinen piste
+  ]
+}
+ 
 
 
 function App() {
@@ -44,11 +65,11 @@ function App() {
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars
           problemInfo={exampleProblem3ObjectiveData}
-          upperBound={problemData.upperBounds}
-          lowerBound={problemData.lowerBounds}
+          upperBound={problemData2.upperBounds}
+          lowerBound={problemData2.lowerBounds}
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
-          step={1} // n. 1-100, nyt 1-3.
-          referencePoints={problemData.refPoints}
+          step={3} // n. 1-100, nyt 1-3.
+          referencePoints={problemData2.refPoints}
           boundary={[5,0.3]} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
