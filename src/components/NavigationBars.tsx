@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
 import { scaleLinear, scaleBand, scalePoint } from "d3-scale";
+import { range } from "d3-array";
 import { axisBottom, axisLeft } from "d3-axis";
 import { polygonArea } from "d3-polygon";
 import { line } from "d3-shape";
@@ -37,7 +38,12 @@ const defaultDimensions = {
 };
 
 /*
- * TODO: put axises better in place
+ * TODO:
+ * draw reference point
+ * find solution to X-axis. ask.
+ * ask about the useStates for diff variables.
+ * make sure can run with up to 100 steps and all between.. Should work.
+ * start making stuff interactive mainly moving the reference point
  *
  */
 
@@ -87,19 +93,19 @@ export const NavigationBars = ({
 
   const [uBound] = useState(upperBound);
   const [lBound] = useState(lowerBound);
-  const allSteps = totalSteps;
+  // 100 is the real max, use 10 for simplicity
+  const allStepsOG = totalSteps;
+  const allSteps = 10;
 
-  const allStepstemp = 10;
-
-  let currentstep = 0;
-  let steps = step;
-  //const allAxis = data.objectiveNames.map((name, _) => name), //Names of each axis
-  // numberOfObjectives = allAxis.length; //The number of different axes
+  // how many steps drawn
+  const steps = step;
 
   const [refPoints] = useState(referencePoints);
-  const bounds = useState(boundary);
+  //const bounds = useState(boundary); // when to use useStates ?
   console.log(handleBound, handleReferencePoint);
 
+  // when to use these, do i need the data object even?
+  const boundaries = data.boundary;
   const ideal = data.problemInfo.ideal;
   const nadir = data.problemInfo.nadir;
   const minOrMax = data.problemInfo.minimize;
@@ -137,11 +143,10 @@ export const NavigationBars = ({
   }, [data, yAxis, yAxis_rev]);
 
   // x-axis only cares about the steps.
-  // maybe use d3.scalePoint ?
   const xAxis = useCallback(() => {
     return objNames.map(() => {
-      return scalePoint()
-        .domain(["0", "1", "2", "3", "4", "5"])
+      return scaleLinear()
+        .domain([0, allSteps])
         .range([0, dimensions.chartWidth]);
     });
   }, [data, dimensions]);
@@ -151,6 +156,8 @@ export const NavigationBars = ({
       return axisBottom(xAxis()[i]);
     });
   }, [data, xAxis]);
+
+  console.log(range(1, 10).toString());
 
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
@@ -197,6 +204,7 @@ export const NavigationBars = ({
           .call(xAxises()[i]);
       });
 
+      // labels
       chart
         .append("g")
         .selectAll("text")
@@ -210,12 +218,8 @@ export const NavigationBars = ({
         .attr("font-size", "10px")
         .attr("font-weight", "bold");
 
-
-      // TODO: kun enemmän pisteitä boundseissa kun tavoitteita niin hajoaa
-      const len = uBound[0].length;
       console.log("YLA", uBound);
       console.log("ALA", lBound);
-      console.log(len);
 
       const drawableSteps = [Array.from(Array(steps).keys())];
 
@@ -227,42 +231,38 @@ export const NavigationBars = ({
           let j = index; // tämä kun vaihtaa objektien kesken
           let i;
           let path;
-          // first step. 
+          // first step.
           for (i = 0; i < 1; i++) {
             path = [
-              xAxis()[j](i.toString()),
+              xAxis()[j](i),
               yAxis()[j](uBound[j][i]),
-              xAxis()[j](i.toString()),
+              xAxis()[j](i),
               yAxis()[j](lBound[j][i]),
             ].join(",");
           }
           // lowerBounds
           for (i = 1; i < lBound[j].length; i++) {
             path =
-              path +
-              "," +
-              [xAxis()[j](i.toString()), yAxis()[j](lBound[j][i])].join(",");
+              path + "," + [xAxis()[j](i), yAxis()[j](lBound[j][i])].join(",");
           }
           // upperBounds
           for (i = uBound[j].length - 1; i > 0; i--) {
             path =
-              path +
-              "," +
-              [xAxis()[j](i.toString()), yAxis()[j](uBound[j][i])].join(",");
+              path + "," + [xAxis()[j](i), yAxis()[j](uBound[j][i])].join(",");
           }
-          console.log("MIN index", index)
+          console.log("MIN index", index);
           console.log("Path MIN", path);
           return path;
         } else {
           let j = index; // tämä kun vaihtaa objektien kesken
           let i;
           let path;
-          // first step. 
+          // first step.
           for (i = 0; i < 1; i++) {
             path = [
-              xAxis()[j](i.toString()),
+              xAxis()[j](i),
               yAxis_rev()[j](uBound[j][i]),
-              xAxis()[j](i.toString()),
+              xAxis()[j](i),
               yAxis_rev()[j](lBound[j][i]),
             ].join(",");
           }
@@ -271,21 +271,17 @@ export const NavigationBars = ({
             path =
               path +
               "," +
-              [xAxis()[j](i.toString()), yAxis_rev()[j](lBound[j][i])].join(
-                ","
-              );
+              [xAxis()[j](i), yAxis_rev()[j](lBound[j][i])].join(",");
           }
           // upperBounds
           for (i = uBound[j].length - 1; i > 0; i--) {
             path =
               path +
               "," +
-              [xAxis()[j](i.toString()), yAxis_rev()[j](uBound[j][i])].join(
-                ","
-              );
+              [xAxis()[j](i), yAxis_rev()[j](uBound[j][i])].join(",");
           }
 
-          console.log("MAX index", index)
+          console.log("MAX index", index);
           console.log("Path MAX", path);
           return path;
         }
@@ -314,7 +310,51 @@ export const NavigationBars = ({
               })
               .join(" ");
           });
+
+        console.log(minOrMax);
+        //boundary: [7,0.5,-1],
+        // boundary Line data
+        const bLines = minOrMax.map((d, i) => {
+          if (d === -1) {
+            return [
+              [0, yAxis_rev()[i](boundary[i])],
+              [xAxis()[i](allSteps), yAxis_rev()[i](boundary[i])],
+            ];
+          }
+          return [
+            [0, yAxis()[i](boundary[i])],
+            [xAxis()[i](allSteps), yAxis()[i](boundary[i])],
+          ];
+        });
+        console.log("bLines", bLines);
+
+        const boundaryLines = bLines.map((d, _) => {
+          console.log(d);
+          console.log(d[0][1]);
+          return line()([
+            [d[0][0], d[0][1]],
+            [d[1][0], d[1][1]],
+          ]);
+        });
+        console.log(boundaryLines);
+
+        // draw boundary line
+        enter
+          .append("g")
+          .selectAll(".boundary")
+          .data(objNames)
+          .enter()
+          .append("path")
+          .attr("class", "boundary")
+          .attr("stroke-dasharray", "3,3")
+          .attr("d", () => boundaryLines[index])
+          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("stroke", "black")
+          .attr("stroke-width", "1px");
       });
+
+
+
     }
   }, [selection, data, dimensions]);
 
