@@ -308,8 +308,6 @@ export const NavigationBars = ({
 
         // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
         if (boundary !== undefined) {
-          //boundary: [7,0.5,-1],
-          // boundary Line data
           const bLines = minOrMax.map((d, i) => {
             if (d === -1) {
               return [
@@ -324,7 +322,7 @@ export const NavigationBars = ({
           });
           console.log("bLines", bLines);
 
-          const boundaryLines = bLines.map((d, _) => {
+          const boundaryLines = bLines.map((d) => {
             return line()([
               [d[0][0], d[0][1]],
               [d[1][0], d[1][1]],
@@ -350,36 +348,50 @@ export const NavigationBars = ({
         // referencepoint
         console.log("referencePoints", refPoints);
 
-        /* pitäisi  niinkun 
-         *  steps y arvo
-         *  [0, 5]
-         *  [1, 5]
-         *  [2, 4]
-         *ja vika
-            [alltsteps, vika y arvo]
-         *
-         */
 
-        const rLines = refPoints.map((d,i) => {
-          console.log("d,i", d,i)
-          return d.map((v) => {
-          console.log("v,i", v,i)
-            return [xAxis()[i](i), yAxis()[i](v)]
-          }) 
+        // olisi nätimpää mutten saa toimimaan
+        //        const rLines = refPoints.map((d,i) => {
+        //          console.log("d,i", d,i)
+        //          return d.map((v, int) => {
+        //          console.log("v,int", v,int)
+        //            let r = range(0, 10)
+        //            return [xAxis()[i](r[int]), yAxis()[i](v)]
+        //          })
+        //
+        //        })
+        //        console.log(rLines)
+        //
+        //        const refLines = rLines.map((d) => {
+        //          return line()(
+        //            d.map((v) => {
+        //            return [v[0], v[1]]
+        //            })
+        //          );
+        //        });
+        //
+        //        console.log("refLines", refLines)
+        //
 
-        })
-        console.log(rLines)
+        // linesit käytännössä sama koodi.. 
+        // Mutta eri toiminnallisuus, tarvitsee ajatusta
+
+        const rLines = refPoints.map((d, i) => {
+          console.log("rline", d, i)
+            return [
+              [0, yAxis()[i](d[i])],
+              [xAxis()[i](allSteps), yAxis()[i](d[i])],
+            ];
+          });
+        console.log(rLines);
 
         const refLines = rLines.map((d) => {
-          return line()(
-            d.map((v) => {
-            return [v[0], v[1]]
-            })
-          );
+          return line()([
+            [d[0][0], d[0][1]],
+            [d[1][0], d[1][1]],
+          ]);
         });
 
-        console.log("refLines", refLines)
-
+        console.log("refLines", refLines);
         enter
           .append("g")
           .selectAll(".refPoint")
@@ -390,7 +402,7 @@ export const NavigationBars = ({
           .attr("d", () => refLines[index])
           .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("stroke", "black")
-          .attr("stroke-width", "2px");
+          .attr("stroke-width", "3px");
       });
     }
   }, [selection, data, dimensions]);

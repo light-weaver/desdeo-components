@@ -32,7 +32,7 @@ const problemData = {
     [0,4,2], // objective 3 
   ],
   steps: 2,
-  boundary: [7,0.5,-1],
+  boundary: [7,0.8,-1],
 }
 // with 4 steps, should work when axises are fixed
 const problemData2 = {
@@ -47,14 +47,14 @@ const problemData2 = {
     [-5,-4, -3,0.2,0.5,1], // objective 3
   ],
   refPoints: [
-    [7,5,4,3,3], // objective 1
-    [0.4,0.5, 0.45, 0.42,0.42], // objective 2
+    [8,5,4,3,3], // objective 1
+    [0.6,0.5, 0.45, 0.42,0.42], // objective 2
     [0,4,2,2.2,2.2], // objective 3 
   ],
   steps: 5,
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   // big enough so its out of the picture would be one (stupid) way.
-  boundary: [7, 0.5,-1],
+  boundary: [7, 0.7,-1],
 }
  
 
