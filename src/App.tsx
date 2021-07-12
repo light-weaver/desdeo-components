@@ -52,7 +52,9 @@ const problemData2 = {
     [0,4,2,2.2,2.2], // objective 3 
   ],
   steps: 5,
-  boundary: [7,0.5,-1],
+  // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
+  // big enough so its out of the picture would be one (stupid) way.
+  boundary: [7, 0.5,-1],
 }
  
 
@@ -74,7 +76,7 @@ function App() {
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
           step={problemData2.steps} // n. 1-100, nyt 1-3.
           referencePoints={problemData2.refPoints}
-          boundary={problemData.boundary} // boundary for obj1, obj2
+          boundary={problemData2.boundary} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
         />
@@ -86,9 +88,9 @@ function App() {
           upperBound={problemData.upperBounds}
           lowerBound={problemData.lowerBounds}
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
-          step={problemData2.steps} // n. 1-100, nyt 1-3.
+          step={problemData.steps} // n. 1-100, nyt 1-3.
           referencePoints={problemData.refPoints}
-          boundary={problemData2.boundary} // boundary for obj1, obj2
+          boundary={problemData.boundary} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
         />

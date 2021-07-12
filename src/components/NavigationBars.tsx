@@ -18,7 +18,7 @@ interface NavigationBarsProps {
   totalSteps: number;
   step: number;
   referencePoints: number[][];
-  boundary: number[];
+  boundary?: number[];
   handleReferencePoint:
     | React.Dispatch<React.SetStateAction<number[]>>
     | ((x: number[]) => void);
@@ -157,8 +157,6 @@ export const NavigationBars = ({
     });
   }, [data, xAxis]);
 
-  console.log(range(1, 10).toString());
-
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
     // create a discrete band to position each of the horizontal bars
@@ -226,7 +224,6 @@ export const NavigationBars = ({
       const drawPolygons = (steps: number[], index: number) => {
         console.log("tämä d 2", steps, index);
 
-        console.log("min or max", minOrMax[index]);
         if (minOrMax[index] === 1) {
           let j = index; // tämä kun vaihtaa objektien kesken
           let i;
@@ -250,8 +247,6 @@ export const NavigationBars = ({
             path =
               path + "," + [xAxis()[j](i), yAxis()[j](uBound[j][i])].join(",");
           }
-          console.log("MIN index", index);
-          console.log("Path MIN", path);
           return path;
         } else {
           let j = index; // tämä kun vaihtaa objektien kesken
@@ -281,8 +276,6 @@ export const NavigationBars = ({
               [xAxis()[j](i), yAxis_rev()[j](uBound[j][i])].join(",");
           }
 
-          console.log("MAX index", index);
-          console.log("Path MAX", path);
           return path;
         }
       };
@@ -312,49 +305,93 @@ export const NavigationBars = ({
           });
 
         console.log(minOrMax);
-        //boundary: [7,0.5,-1],
-        // boundary Line data
-        const bLines = minOrMax.map((d, i) => {
-          if (d === -1) {
+
+        // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
+        if (boundary !== undefined) {
+          //boundary: [7,0.5,-1],
+          // boundary Line data
+          const bLines = minOrMax.map((d, i) => {
+            if (d === -1) {
+              return [
+                [0, yAxis_rev()[i](boundary[i])],
+                [xAxis()[i](allSteps), yAxis_rev()[i](boundary[i])],
+              ];
+            }
             return [
-              [0, yAxis_rev()[i](boundary[i])],
-              [xAxis()[i](allSteps), yAxis_rev()[i](boundary[i])],
+              [0, yAxis()[i](boundary[i])],
+              [xAxis()[i](allSteps), yAxis()[i](boundary[i])],
             ];
-          }
-          return [
-            [0, yAxis()[i](boundary[i])],
-            [xAxis()[i](allSteps), yAxis()[i](boundary[i])],
-          ];
-        });
-        console.log("bLines", bLines);
+          });
+          console.log("bLines", bLines);
 
-        const boundaryLines = bLines.map((d, _) => {
-          console.log(d);
-          console.log(d[0][1]);
-          return line()([
-            [d[0][0], d[0][1]],
-            [d[1][0], d[1][1]],
-          ]);
-        });
-        console.log(boundaryLines);
+          const boundaryLines = bLines.map((d, _) => {
+            return line()([
+              [d[0][0], d[0][1]],
+              [d[1][0], d[1][1]],
+            ]);
+          });
+          console.log(boundaryLines);
 
-        // draw boundary line
+          // draw boundary line
+          enter
+            .append("g")
+            .selectAll(".boundary")
+            .data(objNames)
+            .enter()
+            .append("path")
+            .attr("class", "boundary")
+            .attr("stroke-dasharray", "3,3")
+            .attr("d", () => boundaryLines[index])
+            .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+            .attr("stroke", "black")
+            .attr("stroke-width", "1px");
+        }
+
+        // referencepoint
+        console.log("referencePoints", refPoints);
+
+        /* pitäisi  niinkun 
+         *  steps y arvo
+         *  [0, 5]
+         *  [1, 5]
+         *  [2, 4]
+         *ja vika
+            [alltsteps, vika y arvo]
+         *
+         */
+
+        const rLines = refPoints.map((d,i) => {
+          console.log("d,i", d,i)
+          return d.map((v) => {
+          console.log("v,i", v,i)
+            return [xAxis()[i](i), yAxis()[i](v)]
+          }) 
+
+        })
+        console.log(rLines)
+
+        const refLines = rLines.map((d) => {
+          return line()(
+            d.map((v) => {
+            return [v[0], v[1]]
+            })
+          );
+        });
+
+        console.log("refLines", refLines)
+
         enter
           .append("g")
-          .selectAll(".boundary")
+          .selectAll(".refPoint")
           .data(objNames)
           .enter()
           .append("path")
-          .attr("class", "boundary")
-          .attr("stroke-dasharray", "3,3")
-          .attr("d", () => boundaryLines[index])
+          .attr("class", "refPoint")
+          .attr("d", () => refLines[index])
           .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("stroke", "black")
-          .attr("stroke-width", "1px");
+          .attr("stroke-width", "2px");
       });
-
-
-
     }
   }, [selection, data, dimensions]);
 
