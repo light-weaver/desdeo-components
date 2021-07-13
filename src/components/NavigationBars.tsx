@@ -100,7 +100,7 @@ export const NavigationBars = ({
   // how many steps drawn
   const steps = step;
 
-  const [refPoints] = useState(referencePoints);
+  const [refPoints, setRefPoints] = useState(referencePoints);
   //const bounds = useState(boundary); // when to use useStates ?
   console.log(handleBound, handleReferencePoint);
 
@@ -113,6 +113,10 @@ export const NavigationBars = ({
 
   // axises and stuff here
   const plotHeight = 250;
+  
+  useEffect(() => {
+    setRefPoints(referencePoints)
+  }, [referencePoints])
 
   // y-axis needs to scale the objectives
   const yAxis_rev = useCallback(() => {
@@ -346,8 +350,6 @@ export const NavigationBars = ({
         }
 
         // referencepoint
-        console.log("referencePoints", refPoints);
-
 
         // olisi nätimpää mutten saa toimimaan
         //        const rLines = refPoints.map((d,i) => {
@@ -372,40 +374,67 @@ export const NavigationBars = ({
         //        console.log("refLines", refLines)
         //
 
-        // linesit käytännössä sama koodi.. 
+        // linesit käytännössä sama koodi..
         // Mutta eri toiminnallisuus, tarvitsee ajatusta
-
-        const rLines = refPoints.map((d, i) => {
-          console.log("rline", d, i)
-            return [
-              [0, yAxis()[i](d[i])],
-              [xAxis()[i](allSteps), yAxis()[i](d[i])],
-            ];
-          });
-        console.log(rLines);
-
-        const refLines = rLines.map((d) => {
-          return line()([
-            [d[0][0], d[0][1]],
-            [d[1][0], d[1][1]],
-          ]);
-        });
-
-        console.log("refLines", refLines);
-        enter
-          .append("g")
-          .selectAll(".refPoint")
-          .data(objNames)
-          .enter()
-          .append("path")
-          .attr("class", "refPoint")
-          .attr("d", () => refLines[index])
-          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
-          .attr("stroke", "black")
-          .attr("stroke-width", "3px");
+        // hieman buginen.. TODO: muuta eka niin että lukee vain ekat
+        // tämä omaan useEffectiin
       });
     }
   }, [selection, data, dimensions]);
+
+  // useEffect for refLines
+  // currently only draws the first point
+  // TODO: draw the history as well
+  useEffect(() => {
+    if (!selection) {
+      return;
+    }
+
+    selection.selectAll(".refPoint").remove(); // removes old points
+    console.log("sel", selection);
+
+    console.log("referencePoints", refPoints);
+    refPoints.map((_, index) => {
+      const enter = selection
+        .append("g")
+        .attr(
+          "transform",
+          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+        );
+      console.log(index);
+
+      // here to add the other points in correct form
+      const rLines = refPoints.map((d, i) => {
+        console.log("rline", d, i);
+        return [
+          [0, yAxis()[i](d[0])],
+          [xAxis()[i](allSteps), yAxis()[i](d[0])],
+        ];
+      });
+      console.log(rLines);
+
+      // here to read them and draw them 
+      const refLines = rLines.map((d) => {
+        return line()([
+          [d[0][0], d[0][1]],
+          [d[1][0], d[1][1]],
+        ]);
+      });
+
+      console.log("refLines", refLines);
+      enter
+        .append("g")
+        .selectAll(".refPoint")
+        .data(refPoints)
+        .enter()
+        .append("path")
+        .attr("class", "refPoint")
+        .attr("d", () => refLines[index])
+        .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+        .attr("stroke", "black")
+        .attr("stroke-width", "3px");
+    });
+  }, [selection, refPoints, data]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
