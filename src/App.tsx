@@ -27,34 +27,35 @@ const problemData = {
     [-5,0,1], // objective 3
   ],
   refPoints: [
-    [5,4,3], // objective 1
-    [0.4,0.5, 0.45], // objective 2
-    [0,4,2], // objective 3 
+    [2], // objective 1
+    [0.3], // objective 2
+    [-1,], // objective 3 
   ],
   steps: 2,
-  boundary: [7,0.8,-1],
+  boundary: [[7], [0.7],[-1]],
+  // pitää olla number[][] nykyään
 }
 // with 4 steps, should work when axises are fixed
 const problemData2 = {
   upperBounds: [
-    [10,9,7,5,3,2], // objective 1
-    [2.0,1.9,1.5,0.8,0.6,0.3], // objective 2
-    [5,4.5,4,3,2.8,1], // objective 3
+    [10,9,7,5,5,5], // objective 1
+    [2.0,1.9,1.5,0.8,0.6,0.6], // objective 2
+    [5,4.5,4,3,2.8,2.8], // objective 3
   ],
   lowerBounds: [
-    [0,0.2, 0.3, 0.5,1.5,2], // objective 1
-    [0.0,0.05, 0.1, 0.15, 0.2, 0.3], // objective 2
-    [-5,-4, -3,0.2,0.5,1], // objective 3
+    [0,0.2, 0.3, 0.5,1.5,1.5], // objective 1
+    [0.0,0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
+    [-5,-4, -3,0.2,0.5,0.5], // objective 3
   ],
   refPoints: [
-    [8,5,4,3,3], // objective 1
-    [0.6,0.5, 0.45, 0.42,0.42], // objective 2
-    [0,4,2,2.2,2.2], // objective 3 
+    [7, 6, 5, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
+    [0.5,0.32,0.45, 0.42,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
+    [-1,4,-1,1,2.2, 2, 2,2, 2,2], // objective 3 
   ],
   steps: 5,
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   // big enough so its out of the picture would be one (stupid) way.
-  boundary: [7, 0.7,-1],
+  boundary: [[7], [0.7],[-1]],
 }
  
 
