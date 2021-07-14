@@ -55,7 +55,11 @@ const problemData2 = {
   steps: 5,
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   // big enough so its out of the picture would be one (stupid) way.
-  boundary: [[7], [0.7],[-1]],
+  boundary: [
+    [7,7,7,6,6,6,6,6,6,6], 
+    [0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    [-2, -2,-2,-2, -2 , -2, -2, -2, -2, -2, -2, -2]
+  ],
 }
  
 

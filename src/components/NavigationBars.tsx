@@ -28,6 +28,12 @@ interface NavigationBarsProps {
   dimensionsMaybe?: RectDimensions;
 }
 
+// data type to hold datapoints for ref and boundary lines
+interface PointData {
+  x: number;
+  y: number;
+}
+
 const defaultDimensions = {
   chartHeight: 1000,
   chartWidth: 1200,
@@ -83,7 +89,6 @@ export const NavigationBars = ({
     lowerBound,
     referencePoints,
     step,
-    boundary,
   };
 
   const [data, SetData] = useState(Data);
@@ -95,17 +100,17 @@ export const NavigationBars = ({
   const [lBound] = useState(lowerBound);
   // 100 is the real max, use 10 for simplicity
   const allStepsOG = totalSteps;
-  const allSteps = 10;
+  const allSteps = 11;
 
   // how many steps drawn
   const steps = step;
 
   const [refPoints, setRefPoints] = useState(referencePoints);
-  //const bounds = useState(boundary); // when to use useStates ?
+  const [bounds, setBoundary] = useState(boundary); // when to use useStates ?
   console.log(handleBound, handleReferencePoint);
 
   // when to use these, do i need the data object even?
-  const boundaries = data.boundary;
+  const boundaries = boundary;
   const ideal = data.problemInfo.ideal;
   const nadir = data.problemInfo.nadir;
   const minOrMax = data.problemInfo.minimize;
@@ -113,6 +118,11 @@ export const NavigationBars = ({
 
   // axises and stuff here
   const plotHeight = 250;
+  const drawableSteps = Array.from(range(0, allSteps));
+
+  useEffect(() => {
+    setBoundary(boundary);
+  }, [boundary]);
 
   useEffect(() => {
     setRefPoints(referencePoints);
@@ -160,6 +170,15 @@ export const NavigationBars = ({
       return axisBottom(xAxis()[i]);
     });
   }, [data, xAxis]);
+
+  const lineGenerator = line<PointData>()
+    .x(function (d) {
+      return d["x"];
+    })
+    .y(function (d) {
+      return d["y"];
+    })
+    .curve(curveStepAfter);
 
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
@@ -350,33 +369,62 @@ export const NavigationBars = ({
             .attr("stroke", "black")
             .attr("stroke-width", "1px");
         }
-
       });
     }
   }, [selection, data, dimensions]);
-
 
   // useEffect for boundary
   useEffect(() => {
     if (!selection || !boundaries) {
       return;
     }
+    selection.selectAll(".boundary").remove(); // removes old points
+    console.log("sel", selection);
 
-    boundaries.map((_, index) => {
-      const enter = selection
-        .append("g")
-        .attr(
-          "transform",
-          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
-        );
+    if (bounds !== undefined) {
+      boundaries.map((_, index) => {
+        const enter = selection
+          .append("g")
+          .attr(
+            "transform",
+            `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+          );
 
-        console.log(index, enter)
+          // TODO: if bounds[i] not set check for the NaN and if true skip.
+        console.log(index, enter);
 
+        // Yea let's make own data type to get rid of the annoying errors.
+        const boundaryPointData: PointData[] = [];
+        for (let ind of drawableSteps) {
+          if (minOrMax[index] === -1) {
+            boundaryPointData.push({
+              x: xAxis()[index](drawableSteps[ind]),
+              y: yAxis_rev()[index](bounds[index][ind]),
+            });
+          } else {
+            boundaryPointData.push({
+              x: xAxis()[index](drawableSteps[ind]),
+              y: yAxis()[index](bounds[index][ind]),
+            });
+          }
 
-  });
-
-  }, [selection, boundaries, data])
-
+          enter
+            .append("g")
+            .selectAll(".boundary")
+            .data(boundaryPointData)
+            .enter()
+            .append("path")
+            .attr("class", "boundary")
+            .attr("stroke-dasharray", "3,3")
+            .attr("d", () => lineGenerator(boundaryPointData))
+            .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+            .attr("fill", "none")
+            .attr("stroke", "black")
+            .attr("stroke-width", "1px");
+        }
+      });
+    }
+  }, [selection, bounds, data]);
 
   // useEffect for refLines
   // currently only draws the first point
@@ -399,49 +447,23 @@ export const NavigationBars = ({
         );
 
       console.log(index);
-      // This to draw the referencePoints like the polygons aka for once per objective.
-      // so linedata needs to have start + all the reference points with steps + last line to end (x width, last refpoint)
-      interface ReferencePointData {
-        x: number;
-        y: number;
-      }
-
-      /* nykyisen järjen mukaan data yksikkö on       
-       *  x iteroi 0 -> drawableStepsseillä max stepsheihin
-       *  y iteroi ekasta ref pisteestä[0] refpisteelistan loppuun, jonka perään sitä vikaa toistetaan kunnes max steps.
-       *  eli käytännössä voisi olla kiva jos ref datassa olisi aina pisteiden verran niitä arvoja
-       *  ..
-       *  taisiis mitäs jos oletetaan näin, siirtyy mahdolinen ongelma käyttöliittymälle.
-       *
-       */
-
       // Tätä sitten testaamaan, että missä hajoaa.
 
-      const drawableSteps = Array.from(range(0,allSteps));
-      console.log("draw steps", drawableSteps);
-      console.log("draw steps", drawableSteps[0]);
-
       // Yea let's make own data type to get rid of the annoying errors.
-      let referencePointData: ReferencePointData[] = []
+      const referencePointData: PointData[] = [];
       for (let ind of drawableSteps) {
         if (minOrMax[index] === -1) {
-          referencePointData.push({x: xAxis()[index](drawableSteps[ind]), y: yAxis_rev()[index](refPoints[index][ind])})
-        } 
-        else {
-          referencePointData.push({x: xAxis()[index](drawableSteps[ind]), y: yAxis()[index](refPoints[index][ind])})
+          referencePointData.push({
+            x: xAxis()[index](drawableSteps[ind]),
+            y: yAxis_rev()[index](refPoints[index][ind]),
+          });
+        } else {
+          referencePointData.push({
+            x: xAxis()[index](drawableSteps[ind]),
+            y: yAxis()[index](refPoints[index][ind]),
+          });
         }
       }
-
-
-      let lineGenerator = line<ReferencePointData>()
-          .x(function (d) {
-              return d['x'];
-          })
-          .y(function (d) {
-            return d['y'];
-          })
-          .curve(curveStepAfter);
-      console.log("stupid reflines", lineGenerator);
 
       enter
         .append("g")
@@ -453,10 +475,8 @@ export const NavigationBars = ({
         .attr("d", () => lineGenerator(referencePointData))
         .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
         .attr("fill", "none")
-        .attr("stroke", "black").attr('stroke-width', '3px');
-
-
-
+        .attr("stroke", "black")
+        .attr("stroke-width", "3px");
     });
   }, [selection, refPoints, data]);
 
