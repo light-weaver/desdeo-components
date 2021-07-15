@@ -12,30 +12,67 @@ import {
 } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
-// TODO: muuta ehkä interfaceksi tyyliin exampledataan.tsx?
-// eg. here ideal is 10 for obj[0] and nadir is 0.
-// 3 steps
+
+// doesnt work
+const range = (max:number, min:number, l:number) => {
+  Array.from({length: l}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
+}
+
+let L = 10
+
+let max = 10
+let min = 2
+let objective1upper =  Array.from({length: L}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
+max = 2
+min = 0.1
+let objective1lower = Array.from({length: L}, () =>(Math.random()*(max - min)) + min).sort((a,b) => a - b) 
+max = 2.0
+min = 0.3
+let objective2upper = Array.from({length: L}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
+max = 0.3
+min = 0.0
+let objective2lower = Array.from({length: L}, () => (Math.random()*(max - min)) + min).sort((a,b) => a - b) 
+max = 5
+min = 1
+let objective3upper = Array.from({length: L}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
+max = 1
+min = -5
+let objective3lower = Array.from({length: L}, () => (Math.random()*(max - min)) + min).sort((a,b) => a - b) 
+
+
+let objRef1 = Array.from({length: L+1}, () => (Math.random()*(7 - 2)) + 2)//.sort((a,b) => b - a) 
+let objRef2 = Array.from({length: L+1}, () => (Math.random()*(2 - 0.3)) + 0.3)//.sort((a,b) => b - a) 
+let objRef3 = Array.from({length: L+1}, () => (Math.random()*(5 + 5)) - 5)//.sort((a,b) => b - a) 
+
+let bound1 = Array.from({length: L+1}, () => (Math.random()*(10 - 2)) + 2)
+
+// more complex data to test the component
+// refPoints and bounds need to be atleast steps long ideally same size. 
+// Values don't necessary make any sense here
 const problemData = {
   upperBounds: [
-    [10,5,2], // objective 1
-    [2.0,0.6,0.3], // objective 2
-    [5,3,1], // objective 3
+    objective1upper,
+    objective2upper,
+    objective3upper,
   ],
   lowerBounds: [
-    [0,1.5,2], // objective 1
-    [0.1,0.2,0.3], // objective 2
-    [-5,0,1], // objective 3
+    objective1lower,
+    objective2lower, 
+    objective3lower,
   ],
   refPoints: [
-    [2], // objective 1
-    [0.3], // objective 2
-    [-1,], // objective 3 
+    objRef1,
+    objRef2,
+    objRef3,
   ],
-  steps: 2,
-  boundary: [[7], [0.7],[-1]],
-  // pitää olla number[][] nykyään
+  steps: L,
+  boundary: [
+    bound1,
+    //[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], // objective 1
+    [Number.NaN],[Number.NaN]],
 }
-// with 4 steps, should work when axises are fixed
+
+// simple data for building the component
 const problemData2 = {
   upperBounds: [
     [10,9,7,5,5,5], // objective 1

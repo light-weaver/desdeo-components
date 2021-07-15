@@ -73,10 +73,19 @@ export const NavigationBars = ({
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
   console.log(handleBound, handleReferencePoint);
+  /*
+  let gen = Array.from({length: 20}, () => Math.floor(Math.random()*(10 - 2)) + 2).sort((a,b) => b - a) 
+  console.log(gen)
+
+  let max =10
+  let min =2
+let objective1upper = Array.from({length: 20}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
+console.log(objective1upper)
+ */
 
   // constants
   const allStepsOG = totalSteps;
-  const allSteps = 10;
+  const allSteps = 10; // this breaks drawing boundaries more than 10.
   const steps = step;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
@@ -312,15 +321,19 @@ export const NavigationBars = ({
       // if bounds is not set it has Number.NaN in first index and we skip that objective
       if (!Number.isNaN(bounds[index][0])) {
         for (let ind of drawableSteps) {
+          let currentBound = bounds[index][ind];
+          if (currentBound === undefined) {
+            currentBound = bounds[index][steps];
+          }
           if (minOrMax[index] === -1) {
             boundaryPointData.push({
               x: xAxis()[index](drawableSteps[ind]),
-              y: yAxis_rev()[index](bounds[index][ind]),
+              y: yAxis_rev()[index](currentBound),
             });
           } else {
             boundaryPointData.push({
               x: xAxis()[index](drawableSteps[ind]),
-              y: yAxis()[index](bounds[index][ind]),
+              y: yAxis()[index](currentBound),
             });
           }
         }
@@ -361,15 +374,19 @@ export const NavigationBars = ({
 
       const referencePointData: PointData[] = [];
       for (let ind of drawableSteps) {
+        let currentPoint = refPoints[index][ind];
+        if (currentPoint === undefined) {
+          currentPoint = refPoints[index][steps];
+        }
         if (minOrMax[index] === -1) {
           referencePointData.push({
             x: xAxis()[index](drawableSteps[ind]),
-            y: yAxis_rev()[index](refPoints[index][ind]),
+            y: yAxis_rev()[index](currentPoint),
           });
         } else {
           referencePointData.push({
             x: xAxis()[index](drawableSteps[ind]),
-            y: yAxis()[index](refPoints[index][ind]),
+            y: yAxis()[index](currentPoint),
           });
         }
       }
