@@ -57,7 +57,8 @@ const problemData2 = {
   // big enough so its out of the picture would be one (stupid) way.
   boundary: [
     [7,7,7,6,6,6,6,6,6,6], 
-    [0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    [Number.NaN],
+    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
     [-2, -2,-2,-2, -2 , -2, -2, -2, -2, -2, -2, -2]
   ],
 }

@@ -152,7 +152,7 @@ const HorizontalBars = ({
           .attr(
             "transform",
             `translate(${dimensions.marginLeft}, ${
-              y().call(y, d.name)! + y().bandwidth() * 1.05
+              y().call(y, d.name) as number + y().bandwidth() * 1.05
             })`
           )
           .call(xAxises()[i].tickSizeOuter(0))
@@ -188,7 +188,7 @@ const HorizontalBars = ({
           }
         })
         .attr("y", (d) => {
-          return y()(d.name)!;
+          return y()(d.name) as number;
         })
         .attr("x", 0)
         .attr("height", y().bandwidth)

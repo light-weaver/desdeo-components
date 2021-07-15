@@ -1,14 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
-import { scaleLinear, scaleBand, scalePoint } from "d3-scale";
+import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
 import { axisBottom, axisLeft } from "d3-axis";
-import { polygonArea } from "d3-polygon";
 import { line, curveStepAfter } from "d3-shape";
 import "d3-transition";
-import { easeCubic } from "d3-ease";
 import "./Svg.css";
-import { ObjectiveData, ProblemInfo } from "../types/ProblemTypes";
+import { ProblemInfo } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface NavigationBarsProps {
@@ -45,10 +43,7 @@ const defaultDimensions = {
 
 /*
  * TODO:
- * draw reference point
  * find solution to X-axis. ask.
- * ask about the useStates for diff variables.
- * make sure can run with up to 100 steps and all between.. Should work.
  * start making stuff interactive mainly moving the reference point
  *
  */
@@ -75,55 +70,38 @@ export const NavigationBars = ({
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  console.log(problemInfo);
-  // const [data, SetData] = useState(problemInfo);
-
-  // data object needs to:
-  // 1. be iterable
-  // 2. have bounds split for different objectives or be in correct order so calling by index is not a problem
-
-  // temp data object
-  const Data = {
-    problemInfo,
-    upperBound,
-    lowerBound,
-    referencePoints,
-    step,
-  };
-
-  const [data, SetData] = useState(Data);
-  console.log("data", data);
-
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
-  const [uBound] = useState(upperBound);
-  const [lBound] = useState(lowerBound);
-  // 100 is the real max, use 10 for simplicity
-  const allStepsOG = totalSteps;
-  const allSteps = 11;
-
-  // how many steps drawn
-  const steps = step;
-
-  const [refPoints, setRefPoints] = useState(referencePoints);
-  const [bounds, setBoundary] = useState(boundary); // when to use useStates ?
   console.log(handleBound, handleReferencePoint);
 
-  // when to use these, do i need the data object even?
-  const boundaries = boundary;
-  const ideal = data.problemInfo.ideal;
-  const nadir = data.problemInfo.nadir;
-  const minOrMax = data.problemInfo.minimize;
-  const objNames = data.problemInfo.objectiveNames;
-
-  // axises and stuff here
+  // constants
+  const allStepsOG = totalSteps;
+  const allSteps = 10;
+  const steps = step;
+  const ideal = problemInfo.ideal;
+  const nadir = problemInfo.nadir;
+  const minOrMax = problemInfo.minimize;
+  const objNames = problemInfo.objectiveNames;
   const plotHeight = 250;
+  const offset = 300;
   const drawableSteps = Array.from(range(0, allSteps));
 
+  // States
+  const [data, setData] = useState(problemInfo);
+  useEffect(() => {
+    setData(problemInfo);
+  }, [problemInfo]);
+
+  const [bounds, setBoundary] = useState(boundary); // when to use useStates ?
+  const [uBound, setUBound] = useState(upperBound);
+  const [lBound, setLBound] = useState(lowerBound);
   useEffect(() => {
     setBoundary(boundary);
-  }, [boundary]);
+    setUBound(uBound);
+    setLBound(lBound);
+  }, [boundary, uBound, lBound]);
 
+  const [refPoints, setRefPoints] = useState(referencePoints);
   useEffect(() => {
     setRefPoints(referencePoints);
   }, [referencePoints]);
@@ -172,17 +150,12 @@ export const NavigationBars = ({
   }, [data, xAxis]);
 
   const lineGenerator = line<PointData>()
-    .x(function (d) {
-      return d["x"];
-    })
-    .y(function (d) {
-      return d["y"];
-    })
+    .x((d) => d["x"])
+    .y((d) => d["y"])
     .curve(curveStepAfter);
 
   // This is the main use effect and should really be fired only once per render.
   useEffect(() => {
-    // create a discrete band to position each of the horizontal bars
     if (!selection) {
       // add svg and update selection
       const renderH = dimensions.chartHeight;
@@ -202,6 +175,7 @@ export const NavigationBars = ({
       console.log("svg clear!");
       selection.selectAll("*").remove();
 
+      // chart where to add stuff
       const chart = selection
         .append("g")
         .attr(
@@ -209,19 +183,17 @@ export const NavigationBars = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      // stuff here
-      objNames.map((d, i) => {
-        console.log(d);
+      objNames.map((_, i) => {
         // y
         chart
           .append("g")
-          .attr("transform", `translate( ${0}  ${300 * i})`)
+          .attr("transform", `translate( ${0}  ${offset * i})`)
           .call(yAxises()[i]);
 
         // x
         chart
           .append("g")
-          .attr("transform", `translate(0 ${250 + 300 * i} )`)
+          .attr("transform", `translate(0 ${plotHeight + offset * i} )`)
           .call(xAxises()[i]);
       });
 
@@ -234,20 +206,13 @@ export const NavigationBars = ({
         .append("text")
         .text((d, i) => `${d} ${minOrMax[i] === -1 ? "(max)" : "(min)️"}`)
         .attr("transform", (_, i) => {
-          return `translate( ${-70}  ${300 * i})`;
+          return `translate( ${-70}  ${offset * i})`;
         })
         .attr("font-size", "10px")
         .attr("font-weight", "bold");
 
-      console.log("YLA", uBound);
-      console.log("ALA", lBound);
-
-      const drawableSteps = [Array.from(Array(steps).keys())];
-      console.log("eka useeff steps", drawableSteps);
-
-      const drawPolygons = (steps: number[], index: number) => {
-        console.log("poly d 2", steps, index);
-
+      const drawPolygons = (index: number) => {
+        // TODO: make better, use steps maybe?
         if (minOrMax[index] === 1) {
           let j = index; // tämä kun vaihtaa objektien kesken
           let i;
@@ -304,7 +269,7 @@ export const NavigationBars = ({
         }
       };
 
-      data.problemInfo.objectiveNames.map((_, index) => {
+      objNames.map((_, index) => {
         const enter = selection
           .append("g")
           .attr(
@@ -317,84 +282,35 @@ export const NavigationBars = ({
 
         enter
           .append("polygon")
-          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("fill", "darkgrey")
           .attr("points", function (d) {
-            //console.log("tämä d",d)
-            return d
-              .map(function (d) {
-                return drawPolygons(d, index);
-              })
-              .join(" ");
+            return d.map(() => drawPolygons(index)).join(" ");
           });
-
-        console.log(minOrMax);
-
-        // TODO: do again, like refPoints except the undefined check if not given
-        // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
-        if (boundary !== undefined) {
-          const bLines = minOrMax.map((d, i) => {
-            if (d === -1) {
-              return [
-                [0, yAxis_rev()[i](boundary[i][i])],
-                [xAxis()[i](allSteps), yAxis_rev()[i](boundary[i][i])],
-              ];
-            }
-            return [
-              [0, yAxis()[i](boundary[i][i])],
-              [xAxis()[i](allSteps), yAxis()[i](boundary[i][i])],
-            ];
-          });
-          console.log("bLines", bLines);
-
-          const boundaryLines = bLines.map((d) => {
-            return line()([
-              [d[0][0], d[0][1]],
-              [d[1][0], d[1][1]],
-            ]);
-          });
-          console.log(boundaryLines);
-
-          // draw boundary line
-          enter
-            .append("g")
-            .selectAll(".boundary")
-            .data(objNames)
-            .enter()
-            .append("path")
-            .attr("class", "boundary")
-            .attr("stroke-dasharray", "3,3")
-            .attr("d", () => boundaryLines[index])
-            .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
-            .attr("stroke", "black")
-            .attr("stroke-width", "1px");
-        }
       });
     }
-  }, [selection, data, dimensions]);
+  }, [selection, data, dimensions, uBound, lBound]);
 
   // useEffect for boundary
   useEffect(() => {
-    if (!selection || !boundaries) {
+    if (!selection || !bounds) {
       return;
     }
     selection.selectAll(".boundary").remove(); // removes old points
     console.log("sel", selection);
 
-    if (bounds !== undefined) {
-      boundaries.map((_, index) => {
-        const enter = selection
-          .append("g")
-          .attr(
-            "transform",
-            `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
-          );
+    bounds.map((_, index) => {
+      const enter = selection
+        .append("g")
+        .attr(
+          "transform",
+          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+        );
 
-          // TODO: if bounds[i] not set check for the NaN and if true skip.
-        console.log(index, enter);
+      const boundaryPointData: PointData[] = [];
 
-        // Yea let's make own data type to get rid of the annoying errors.
-        const boundaryPointData: PointData[] = [];
+      // if bounds is not set it has Number.NaN in first index and we skip that objective
+      if (!Number.isNaN(bounds[index][0])) {
         for (let ind of drawableSteps) {
           if (minOrMax[index] === -1) {
             boundaryPointData.push({
@@ -407,28 +323,26 @@ export const NavigationBars = ({
               y: yAxis()[index](bounds[index][ind]),
             });
           }
-
-          enter
-            .append("g")
-            .selectAll(".boundary")
-            .data(boundaryPointData)
-            .enter()
-            .append("path")
-            .attr("class", "boundary")
-            .attr("stroke-dasharray", "3,3")
-            .attr("d", () => lineGenerator(boundaryPointData))
-            .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
-            .attr("fill", "none")
-            .attr("stroke", "black")
-            .attr("stroke-width", "1px");
         }
-      });
-    }
+        console.log("boundaryData", boundaryPointData);
+        enter
+          .append("g")
+          .selectAll(".boundary")
+          .data(boundaryPointData)
+          .enter()
+          .append("path")
+          .attr("class", "boundary")
+          .attr("stroke-dasharray", "3,3")
+          .attr("d", () => lineGenerator(boundaryPointData))
+          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", "1px");
+      }
+    });
   }, [selection, bounds, data]);
 
   // useEffect for refLines
-  // currently only draws the first point
-  // TODO: draw the history as well
   useEffect(() => {
     if (!selection) {
       return;
@@ -437,7 +351,6 @@ export const NavigationBars = ({
     selection.selectAll(".refPoint").remove(); // removes old points
     console.log("sel", selection);
 
-    console.log("referencePoints", refPoints);
     refPoints.map((_, index) => {
       const enter = selection
         .append("g")
@@ -446,10 +359,6 @@ export const NavigationBars = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      console.log(index);
-      // Tätä sitten testaamaan, että missä hajoaa.
-
-      // Yea let's make own data type to get rid of the annoying errors.
       const referencePointData: PointData[] = [];
       for (let ind of drawableSteps) {
         if (minOrMax[index] === -1) {
