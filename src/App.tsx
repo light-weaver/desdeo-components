@@ -8,7 +8,8 @@ import {
   exampleDataSingle3Objectives,
   exampleDataSingle5Objectives,
   exampleSingle5OldAlternative,
-  exampleProblem3ObjectiveData
+  exampleProblem3ObjectiveData,
+  exampleProblem5ObjectiveData
 } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
@@ -72,6 +73,37 @@ const problemData = {
     [Number.NaN],[Number.NaN]],
 }
 
+const problemData3 = {
+  upperBounds: [
+    objective1upper,
+    objective2upper,
+    objective3upper,
+    objective1upper,
+    objective2upper,
+  ],
+  lowerBounds: [
+    objective1lower,
+    objective2lower, 
+    objective3lower,
+    objective1lower,
+    objective2lower, 
+  ],
+  refPoints: [
+    objRef1,
+    objRef2,
+    objRef3,
+    objRef1,
+    objRef2,
+  ],
+  steps: L,
+  boundary: [
+    bound1,
+    //[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], // objective 1
+    [Number.NaN],
+    [Number.NaN],
+    bound1,
+    [Number.NaN]],
+}
 // simple data for building the component
 const problemData2 = {
   upperBounds: [
@@ -85,21 +117,25 @@ const problemData2 = {
     [-5,-4, -3,0.2,0.5,0.5], // objective 3
   ],
   refPoints: [
-    [7, 6, 5, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
-    [0.5,0.32,0.45, 0.42,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
-    [-1,4,-1,1,2.2, 2, 2,2, 2,2], // objective 3 
+    [7, 6, 4, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
+    [1.5,1.2,0.45, 0.45,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
+    [-1,-1,1,1,2, 2, 2,2, 2,2], // objective 3 
   ],
   steps: 5,
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   // big enough so its out of the picture would be one (stupid) way.
   boundary: [
-    [7,7,7,6,6,6,6,6,6,6], 
+    [8,8,8,6,6,6,6,6,6,6], 
     [Number.NaN],
     //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
-    [-2, -2,-2,-2, -2 , -2, -2, -2, -2, -2, -2, -2]
+    [-2, -2,-2,0, 0 , 0, 0, 0, 0, 0, 0, 0]
   ],
 }
  
+
+const movePoints = () => {
+  console.log("siirretään")
+}
 
 
 function App() {
@@ -122,20 +158,21 @@ function App() {
           boundary={problemData2.boundary} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
+          onDrag={() => movePoints()}
         />
       </div>
-      <br></br>
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars
-          problemInfo={exampleProblem3ObjectiveData}
-          upperBound={problemData.upperBounds}
-          lowerBound={problemData.lowerBounds}
+          problemInfo={exampleProblem5ObjectiveData}
+          upperBound={problemData3.upperBounds}
+          lowerBound={problemData3.lowerBounds}
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
-          step={problemData.steps} // n. 1-100, nyt 1-3.
-          referencePoints={problemData.refPoints}
-          boundary={problemData.boundary} // boundary for obj1, obj2
+          step={problemData3.steps} // n. 1-100, nyt 1-3.
+          referencePoints={problemData3.refPoints}
+          boundary={problemData3.boundary} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
+          onDrag={() => movePoints()}
         />
       </div>
     </>

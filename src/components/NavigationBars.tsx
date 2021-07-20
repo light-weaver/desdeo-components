@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { select, Selection, pointer } from "d3-selection";
+import { drag } from "d3-drag";
 import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
 import { axisBottom, axisLeft } from "d3-axis";
@@ -23,6 +24,7 @@ interface NavigationBarsProps {
   handleBound:
     | React.Dispatch<React.SetStateAction<number[]>>
     | ((x: number[]) => void);
+  onDrag: any;
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -45,7 +47,7 @@ const defaultDimensions = {
  * TODO:
  * find solution to X-axis. ask.
  * start making stuff interactive mainly moving the reference point
- *
+ * Note: lot of empty <g>s in elements..
  */
 
 export const NavigationBars = ({
@@ -58,6 +60,7 @@ export const NavigationBars = ({
   boundary,
   handleReferencePoint,
   handleBound,
+  onDrag,
   dimensionsMaybe,
 }: NavigationBarsProps) => {
   const ref = useRef(null);
@@ -91,8 +94,11 @@ console.log(objective1upper)
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
   const objNames = problemInfo.objectiveNames;
-  const plotHeight = 250;
-  const offset = 300;
+  const offset =
+    (dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom) /
+    problemInfo.nObjectives;
+  const plotHeight = offset - dimensions.marginTop;
+  console.log("off", offset, plotHeight);
   const drawableSteps = Array.from(range(0, allSteps));
 
   // States
@@ -347,7 +353,7 @@ console.log(objective1upper)
           .attr("class", "boundary")
           .attr("stroke-dasharray", "3,3")
           .attr("d", () => lineGenerator(boundaryPointData))
-          .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
           .attr("fill", "none")
           .attr("stroke", "black")
           .attr("stroke-width", "1px");
@@ -372,7 +378,8 @@ console.log(objective1upper)
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      const referencePointData: PointData[] = [];
+      let referencePointData: PointData[] = [];
+
       for (let ind of drawableSteps) {
         let currentPoint = refPoints[index][ind];
         if (currentPoint === undefined) {
@@ -391,18 +398,28 @@ console.log(objective1upper)
         }
       }
 
+      //      let dragHandler = drag()
+
       enter
-        .append("g")
+        .append('g')
         .selectAll(".refPoint")
         .data(referencePointData)
         .enter()
         .append("path")
         .attr("class", "refPoint")
         .attr("d", () => lineGenerator(referencePointData))
-        .attr("transform", `translate(0 ${300 * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
         .attr("fill", "none")
         .attr("stroke", "black")
-        .attr("stroke-width", "3px");
+        .attr("stroke-width", "3px")
+        .on('mouseover', () => onDrag())
+        .call(
+          // @ts-ignore // how to get types correct
+          drag()
+            .on("start", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y)) } )
+            .on("drag", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y))} )
+            .on("end", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y)) })
+        );
     });
   }, [selection, refPoints, data]);
 
