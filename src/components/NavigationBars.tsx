@@ -4,7 +4,8 @@ import { drag } from "d3-drag";
 import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
 import { axisBottom, axisLeft } from "d3-axis";
-import { line, curveStepAfter } from "d3-shape";
+import { line, curveStepAfter} from "d3-shape";
+import {path} from 'd3-path';
 import "d3-transition";
 import "./Svg.css";
 import { ProblemInfo } from "../types/ProblemTypes";
@@ -89,7 +90,7 @@ console.log(objective1upper)
   // constants
   const allStepsOG = totalSteps;
   const allSteps = 10; // this breaks drawing boundaries more than 10.
-  const steps = step;
+  const steps = step - 1;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
@@ -138,6 +139,12 @@ console.log(objective1upper)
         .range([0, plotHeight]);
     });
   }, [dimensions, data]);
+
+
+  const scaleY = scaleLinear()
+        .domain([plotHeight, 0]) // add ideal and nadirs
+        .range([0, 10]);
+
 
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
@@ -398,7 +405,44 @@ console.log(objective1upper)
         }
       }
 
-      //      let dragHandler = drag()
+      // luo uusi viiva step --> loppuun, nimenomaan line.
+      // class .movableLine tms
+      // ota kiinni .movableLine
+      // liikuta sitä kuin viivaa
+      const movePath = () => {
+        enter.selectAll('.movableLine').remove()
+        
+        enter.selectAll('.movableLine').data(movableLineData).enter()
+        .append("path")
+        .attr("class", "movableLine")
+        .attr("d", () => lineGenerator(movableLineData))
+        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .attr("stroke-width", "3px")
+      }
+        let movableLineData: PointData[] =  [
+          {x:600, y:0}, // now needs some data to work. x coord will always be the step coord
+          {x:dimensions.chartWidth, y:0} //. y will change so it doenst matter here
+        ]
+      // poista step eli siitä kohdasta mistä aina muutetaan loppuun.
+      // piirrä se samaan kohtaan
+      const deleteOldPath = () => {
+        // poista stepistä loppuun, piirrä uudestaan refdata
+        console.log(referencePointData)
+        enter.selectAll('.refPoint').remove()
+        referencePointData.splice(step + 1, step - 1) // step + 1, step - 1
+        enter.selectAll('.refPoint').data(referencePointData).enter()
+        .append("path")
+        .attr("class", "refPoint")
+        .attr("d", () => lineGenerator(referencePointData))
+        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .attr("stroke-width", "3px")
+      }
+
+        console.log("refData", referencePointData)
 
       enter
         .append('g')
@@ -412,16 +456,27 @@ console.log(objective1upper)
         .attr("fill", "none")
         .attr("stroke", "black")
         .attr("stroke-width", "3px")
-        .on('mouseover', () => onDrag())
         .call(
-          // @ts-ignore // how to get types correct
-          drag()
-            .on("start", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y)) } )
-            .on("drag", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y))} )
-            .on("end", function(event) { console.log(select(this).attr('x', event.x).attr('y', event.y)) })
+          drag<SVGPathElement, PointData, SVGElement >() // hopefully types are correct
+            .on("start", function() { deleteOldPath() } ) // animoinnin aktivointi
+            .on("drag", function(event) { 
+              //console.log("data eka", referencePointData[steps].x, event.x)
+              movableLineData[0].y = event.y; 
+              movableLineData[1].y = event.y
+              //console.log("data toka", referencePointData[steps].x, event.y)
+              movePath()
+            } ) // animiointi
+            .on("end", function(event) { 
+              // add line coords to reference data
+              console.log(event)
+              console.log("scaleY", scaleY(event.y))
+              let newYvalue = scaleY(event.y) // näyttäisi menevän oikein
+              console.log(event.x, event.y) // this is in its own coordinates..
+              onDrag(newYvalue) 
+            }) // Poista viiva. Lähetä käyttöliittymällä data, joka piirretään uusiksi
         );
     });
-  }, [selection, refPoints, data]);
+  }, [selection, refPoints, referencePoints, data]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };

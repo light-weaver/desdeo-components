@@ -133,17 +133,20 @@ const problemData2 = {
 }
  
 
-const movePoints = () => {
-  console.log("siirretään")
-}
-
 
 function App() {
   const [selected, setSelected] = useState<number[]>([]);
 
+  const [refData, setRefData] = useState(problemData2.refPoints)
+
   useEffect(() => {
     console.log(selected);
   }, [selected]);
+
+
+  useEffect(() => {
+   setRefData(problemData2.refPoints) 
+  },[refData, problemData2])
 
   return (
     <>
@@ -154,27 +157,26 @@ function App() {
           lowerBound={problemData2.lowerBounds}
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
           step={problemData2.steps} // n. 1-100, nyt 1-3.
-          referencePoints={problemData2.refPoints}
+          referencePoints={refData}
           boundary={problemData2.boundary} // boundary for obj1, obj2
           handleReferencePoint={setSelected}
           handleBound={setSelected}
-          onDrag={() => movePoints()}
+          onDrag={
+         (newPoint:any) => {
+          console.log("drag end, muutetaan dataa, piirretään uudestaan")
+          problemData2.refPoints[0].splice(3, 7)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          console.log(problemData2.refPoints)
+        }
+          }
         />
       </div>
-      <div style={{ width: "1200px", height: "1000px", float: "left" }}>
-        <NavigationBars
-          problemInfo={exampleProblem5ObjectiveData}
-          upperBound={problemData3.upperBounds}
-          lowerBound={problemData3.lowerBounds}
-          totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
-          step={problemData3.steps} // n. 1-100, nyt 1-3.
-          referencePoints={problemData3.refPoints}
-          boundary={problemData3.boundary} // boundary for obj1, obj2
-          handleReferencePoint={setSelected}
-          handleBound={setSelected}
-          onDrag={() => movePoints()}
-        />
-      </div>
+
     </>
   );
 }
