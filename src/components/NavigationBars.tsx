@@ -4,8 +4,7 @@ import { drag } from "d3-drag";
 import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
 import { axisBottom, axisLeft } from "d3-axis";
-import { line, curveStepAfter} from "d3-shape";
-import {path} from 'd3-path';
+import { line, curveStepAfter } from "d3-shape";
 import "d3-transition";
 import "./Svg.css";
 import { ProblemInfo } from "../types/ProblemTypes";
@@ -77,15 +76,6 @@ export const NavigationBars = ({
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
   console.log(handleBound, handleReferencePoint);
-  /*
-  let gen = Array.from({length: 20}, () => Math.floor(Math.random()*(10 - 2)) + 2).sort((a,b) => b - a) 
-  console.log(gen)
-
-  let max =10
-  let min =2
-let objective1upper = Array.from({length: 20}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
-console.log(objective1upper)
- */
 
   // constants
   const allStepsOG = totalSteps;
@@ -140,11 +130,20 @@ console.log(objective1upper)
     });
   }, [dimensions, data]);
 
-
-  const scaleY = scaleLinear()
-        .domain([plotHeight, 0]) // add ideal and nadirs
-        .range([0, 10]);
-
+  // for returning the svg's coordinate value to parent in original scale.
+  const scaleY = useCallback(() => {
+    return minOrMax.map((d, i) => {
+      if (d === -1) {
+        return scaleLinear()
+          .domain([plotHeight, 0]) // add ideal and nadirs
+          .range([ideal[i], nadir[i]]);
+      } else {
+        return scaleLinear()
+          .domain([plotHeight, 0]) // add ideal and nadirs
+          .range([nadir[i], ideal[i]]);
+      }
+    });
+  }, [dimensions, data]);
 
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
@@ -260,7 +259,7 @@ console.log(objective1upper)
           }
           return path;
         } else {
-          let j = index; // tämä kun vaihtaa objektien kesken
+          let j = index;
           let i;
           let path;
           // first step.
@@ -299,12 +298,12 @@ console.log(objective1upper)
             `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
           )
           .selectAll("polygon")
-          .data([drawableSteps]) // tälle viksumpi tapa
+          .data([drawableSteps])
           .enter();
 
         enter
           .append("polygon")
-          .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "darkgrey")
           .attr("points", function (d) {
             return d.map(() => drawPolygons(index)).join(" ");
@@ -350,21 +349,85 @@ console.log(objective1upper)
             });
           }
         }
-        console.log("boundaryData", boundaryPointData);
+      }
+      console.log("boundaryData", boundaryPointData);
+
+      const deleteOldPath = () => {
+        enter.selectAll(".boundary").remove();
+        // remove from component's referencePointData. only for visuals
+        boundaryPointData.splice(step + 1, step - 1); // step + 1, step - 1
         enter
-          .append("g")
           .selectAll(".boundary")
           .data(boundaryPointData)
           .enter()
           .append("path")
-          .attr("class", "boundary")
+          .attr("class", "refPoint")
           .attr("stroke-dasharray", "3,3")
           .attr("d", () => lineGenerator(boundaryPointData))
-          .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+          .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "black")
           .attr("stroke-width", "1px");
-      }
+      };
+
+      // movableLineData object
+      let movableBoundData: PointData[] = [
+        { x: xAxis()[index](step), y: 0 }, // now needs some data to work. x coord will always be the step coord
+        { x: dimensions.chartWidth, y: 0 }, //. y will change so it doenst matter here
+      ];
+
+      const movePath = () => {
+        // remove old movableLine
+        enter.selectAll(".movableBound").remove();
+
+        // add new movableLine and draw it
+        enter
+          .selectAll(".movableBound")
+          .data(movableBoundData)
+          .enter()
+          .append("path")
+          .attr("class", "movableBound")
+          .attr("stroke-dasharray", "3,3")
+          .attr("d", () => lineGenerator(movableBoundData)) // TODO: do i use lineGenerator or just normal line ?
+          .attr("transform", `translate(0 ${offset * index} )`)
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", "1px");
+      };
+
+      enter
+        .append("g")
+        .selectAll(".boundary")
+        .data(boundaryPointData)
+        .enter()
+        .append("path")
+        .attr("class", "boundary")
+        .attr("stroke-dasharray", "3,3")
+        .attr("d", () => lineGenerator(boundaryPointData))
+        .attr("transform", `translate(0 ${offset * index} )`)
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .attr("stroke-width", "1px")
+        .call(
+          drag<SVGPathElement, PointData, SVGElement>() // hopefully types are correct
+            .on("start", function () {
+              deleteOldPath();
+            }) // start
+            .on("drag", function (event) {
+              //console.log("data eka", referencePointData[steps].x, event.x)
+              movableBoundData[0].y = event.y;
+              movableBoundData[1].y = event.y;
+              //console.log("data toka", referencePointData[steps].x, event.y)
+              movePath();
+            })
+            .on("end", function (event) {
+              // add line coords to reference data
+              console.log(event);
+              let newYvalue = scaleY()[index](event.y);
+              console.log(event.x, event.y);
+              onDrag(newYvalue); // send the new value to the parent, that should redraw the component
+            })
+        );
     });
   }, [selection, bounds, data]);
 
@@ -385,8 +448,8 @@ console.log(objective1upper)
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
+      // fill the refData
       let referencePointData: PointData[] = [];
-
       for (let ind of drawableSteps) {
         let currentPoint = refPoints[index][ind];
         if (currentPoint === undefined) {
@@ -405,75 +468,80 @@ console.log(objective1upper)
         }
       }
 
-      // luo uusi viiva step --> loppuun, nimenomaan line.
-      // class .movableLine tms
-      // ota kiinni .movableLine
-      // liikuta sitä kuin viivaa
-      const movePath = () => {
-        enter.selectAll('.movableLine').remove()
-        
-        enter.selectAll('.movableLine').data(movableLineData).enter()
-        .append("path")
-        .attr("class", "movableLine")
-        .attr("d", () => lineGenerator(movableLineData))
-        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", "3px")
-      }
-        let movableLineData: PointData[] =  [
-          {x:600, y:0}, // now needs some data to work. x coord will always be the step coord
-          {x:dimensions.chartWidth, y:0} //. y will change so it doenst matter here
-        ]
-      // poista step eli siitä kohdasta mistä aina muutetaan loppuun.
-      // piirrä se samaan kohtaan
       const deleteOldPath = () => {
-        // poista stepistä loppuun, piirrä uudestaan refdata
-        console.log(referencePointData)
-        enter.selectAll('.refPoint').remove()
-        referencePointData.splice(step + 1, step - 1) // step + 1, step - 1
-        enter.selectAll('.refPoint').data(referencePointData).enter()
-        .append("path")
-        .attr("class", "refPoint")
-        .attr("d", () => lineGenerator(referencePointData))
-        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", "3px")
-      }
+        console.log(referencePointData);
+        enter.selectAll(".refPoint").remove();
+        // remove from component's referencePointData. only for visuals
+        referencePointData.splice(step + 1, step - 1); // step + 1, step - 1
+        enter
+          .selectAll(".refPoint")
+          .data(referencePointData)
+          .enter()
+          .append("path")
+          .attr("class", "refPoint")
+          .attr("d", () => lineGenerator(referencePointData))
+          .attr("transform", `translate(0 ${offset * index} )`)
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", "3px");
+      };
 
-        console.log("refData", referencePointData)
+      // movableLineData object
+      let movableLineData: PointData[] = [
+        { x: xAxis()[index](step), y: 0 }, // now needs some data to work. x coord will always be the step coord
+        { x: dimensions.chartWidth, y: 0 }, //. y will change so it doenst matter here
+      ];
 
+      const movePath = () => {
+        // remove old movableLine
+        enter.selectAll(".movableLine").remove();
+
+        // add new movableLine and draw it
+        enter
+          .selectAll(".movableLine")
+          .data(movableLineData)
+          .enter()
+          .append("path")
+          .attr("class", "movableLine")
+          .attr("d", () => lineGenerator(movableLineData)) // TODO: do i use lineGenerator or just normal line ?
+          .attr("transform", `translate(0 ${offset * index} )`)
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", "3px");
+      };
+
+      // add the referenceLines. Also implemets the drag events.
       enter
-        .append('g')
+        .append("g")
         .selectAll(".refPoint")
         .data(referencePointData)
         .enter()
         .append("path")
         .attr("class", "refPoint")
         .attr("d", () => lineGenerator(referencePointData))
-        .attr("transform", `translate(0 ${offset * index} )`) // tälleen samalla datalla ettei ole päällekkäin
+        .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
         .attr("stroke", "black")
         .attr("stroke-width", "3px")
         .call(
-          drag<SVGPathElement, PointData, SVGElement >() // hopefully types are correct
-            .on("start", function() { deleteOldPath() } ) // animoinnin aktivointi
-            .on("drag", function(event) { 
+          drag<SVGPathElement, PointData, SVGElement>() // hopefully types are correct
+            .on("start", function () {
+              deleteOldPath();
+            }) // start
+            .on("drag", function (event) {
               //console.log("data eka", referencePointData[steps].x, event.x)
-              movableLineData[0].y = event.y; 
-              movableLineData[1].y = event.y
+              movableLineData[0].y = event.y;
+              movableLineData[1].y = event.y;
               //console.log("data toka", referencePointData[steps].x, event.y)
-              movePath()
-            } ) // animiointi
-            .on("end", function(event) { 
+              movePath();
+            })
+            .on("end", function (event) {
               // add line coords to reference data
-              console.log(event)
-              console.log("scaleY", scaleY(event.y))
-              let newYvalue = scaleY(event.y) // näyttäisi menevän oikein
-              console.log(event.x, event.y) // this is in its own coordinates..
-              onDrag(newYvalue) 
-            }) // Poista viiva. Lähetä käyttöliittymällä data, joka piirretään uusiksi
+              console.log(event);
+              let newYvalue = scaleY()[index](event.y);
+              console.log(event.x, event.y);
+              onDrag(newYvalue); // send the new value to the parent, that should redraw the component
+            })
         );
     });
   }, [selection, refPoints, referencePoints, data]);
