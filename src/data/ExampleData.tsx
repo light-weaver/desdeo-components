@@ -1,16 +1,44 @@
-import { ObjectiveData, ProblemInfo   } from "../types/ProblemTypes";
+import { ObjectiveData, ProblemInfo, ProblemData   } from "../types/ProblemTypes";
 
-export const exampleProblem3ObjectiveData: ProblemInfo = {
+export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   problemId: 0,
   problemName: "TestProblem",
   problemType: "Placeholder",
-  objectiveNames: ["G1", "G2", "G3"],
+  objectiveNames: ["Outlet Gases", "Enviromental Damage", "Profit"],
   variableNames: ["X", "Y", "Z"],
   nObjectives: 3,
   ideal: [10,2,-5],
   nadir: [0, 0, 5],
   minimize: [1,1,-1],
 }
+
+export const exampleProblemData3ObjectiveData: ProblemData = {
+  upperBounds: [
+    [10,9,7,5,5,5], // objective 1
+    [2.0,1.9,1.5,0.8,0.6,0.6], // objective 2
+    [5,4.5,4,3,2.8,2.8], // objective 3
+  ],
+  lowerBounds: [
+    [0,0.2, 0.3, 0.5,1.5,1.5], // objective 1
+    [0.0,0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
+    [-5,-4, -3,0.2,0.5,0.5], // objective 3
+  ],
+  refPoints: [
+    [7, 6, 4, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
+    [1.5,1.2,0.45, 0.45,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
+    [-1,-1,1,1,2, 2, 2,2, 2,2], // objective 3 
+  ],
+  // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
+  boundaries: [
+    [8,8,8,6,6,6,6,6,6,6], 
+    [Number.NaN],
+    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    [-2, -2,-2,0, 0 , 0, 0, 0, 0, 0, 0, 0]
+  ],
+  stepsTaken: 5,
+}
+
+
 export const exampleProblem5ObjectiveData: ProblemInfo = {
   problemId: 1,
   problemName: "TestProblem",

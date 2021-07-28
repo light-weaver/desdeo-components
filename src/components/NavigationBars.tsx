@@ -45,9 +45,6 @@ const defaultDimensions = {
 
 /*
  * TODO:
- * find solution to X-axis. ask.
- * start making stuff interactive mainly moving the reference point
- * Note: lot of empty <g>s in elements..
  */
 
 export const NavigationBars = ({
@@ -78,9 +75,9 @@ export const NavigationBars = ({
   console.log(handleBound, handleReferencePoint);
 
   // constants
-  const allStepsOG = totalSteps;
-  const allSteps = 10; // this breaks drawing boundaries more than 10.
-  const steps = step - 1;
+  const allSteps = totalSteps;
+  //const allSteps = 30; // this breaks drawing boundaries more than 10.
+  const steps = step;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
@@ -88,12 +85,14 @@ export const NavigationBars = ({
   const offset =
     (dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom) /
     problemInfo.nObjectives;
-  const plotHeight = offset - dimensions.marginTop;
-  console.log("off", offset, plotHeight);
-  const drawableSteps = Array.from(range(0, allSteps));
+  const plotHeight = offset - dimensions.marginTop; // size of individual plots
+  const drawableSteps = Array.from(range(0, allSteps)); // how many steps will be drawn
 
-  // States
+  // States.TODO: make sense from these
+  // this not used currently
+  // Note: removed all data prop thingys from useEffects because they arent used right now.
   const [data, setData] = useState(problemInfo);
+  console.log(data);
   useEffect(() => {
     setData(problemInfo);
   }, [problemInfo]);
@@ -112,39 +111,36 @@ export const NavigationBars = ({
     setRefPoints(referencePoints);
   }, [referencePoints]);
 
-  // y-axis needs to scale the objectives
+  // Scales the objective values to plot coordinates.
   const yAxis_rev = useCallback(() => {
     return objNames.map((_, i) => {
-      return scaleLinear()
-        .domain([nadir[i], ideal[i]]) // add ideal and nadirs
-        .range([0, plotHeight]);
+      return scaleLinear().domain([nadir[i], ideal[i]]).range([0, plotHeight]);
     });
-  }, [dimensions, data]);
-  //
-  // y-axis needs to scale the objectives. This means maximal is at the top.
+  }, [dimensions]);
+
+  // Scales the objective values to plot coordinates.
   const yAxis = useCallback(() => {
     return objNames.map((_, i) => {
-      return scaleLinear()
-        .domain([ideal[i], nadir[i]]) // add ideal and nadirs
-        .range([0, plotHeight]);
+      return scaleLinear().domain([ideal[i], nadir[i]]).range([0, plotHeight]);
     });
-  }, [dimensions, data]);
+  }, [dimensions]);
 
   // for returning the svg's coordinate value to parent in original scale.
   const scaleY = useCallback(() => {
     return minOrMax.map((d, i) => {
       if (d === -1) {
         return scaleLinear()
-          .domain([plotHeight, 0]) // add ideal and nadirs
+          .domain([plotHeight, 0])
           .range([ideal[i], nadir[i]]);
       } else {
         return scaleLinear()
-          .domain([plotHeight, 0]) // add ideal and nadirs
+          .domain([plotHeight, 0])
           .range([nadir[i], ideal[i]]);
       }
     });
-  }, [dimensions, data]);
+  }, [dimensions]);
 
+  // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
       if (d === -1) {
@@ -153,23 +149,25 @@ export const NavigationBars = ({
         return axisLeft(yAxis()[i]);
       }
     });
-  }, [data, yAxis, yAxis_rev]);
+  }, [yAxis, yAxis_rev]);
 
-  // x-axis only cares about the steps.
+  // xAxis handles the steps
   const xAxis = useCallback(() => {
     return objNames.map(() => {
       return scaleLinear()
         .domain([0, allSteps])
         .range([0, dimensions.chartWidth]);
     });
-  }, [data, dimensions]);
+  }, [dimensions]);
 
+  // calls xAxis for each objective
   const xAxises = useCallback(() => {
     return objNames.map((_, i) => {
-      return axisBottom(xAxis()[i]);
+      return axisBottom(xAxis()[i]).tickValues([]);
     });
-  }, [data, xAxis]);
+  }, [xAxis]);
 
+  // generates the lines for refpoints and boundariesc
   const lineGenerator = line<PointData>()
     .x((d) => d["x"])
     .y((d) => d["y"])
@@ -227,18 +225,19 @@ export const NavigationBars = ({
         .append("text")
         .text((d, i) => `${d} ${minOrMax[i] === -1 ? "(max)" : "(min)️"}`)
         .attr("transform", (_, i) => {
-          return `translate( ${-70}  ${offset * i})`;
+          return `translate( ${-70}  ${offset * i - 10})`;
         })
-        .attr("font-size", "10px")
+        .attr("font-size", "12px")
         .attr("font-weight", "bold");
 
+      // draws the polygons from upper and lowerBounds.
       const drawPolygons = (index: number) => {
-        // TODO: make better, use steps maybe?
+        // if minimizing else maximizing
         if (minOrMax[index] === 1) {
-          let j = index; // tämä kun vaihtaa objektien kesken
-          let i;
-          let path;
-          // first step.
+          let j = index; // current objective index
+          let i; // iterator for the steps
+          let path; // path to be formed
+          // first step. Needs to take first of upperBound and lowerBound
           for (i = 0; i < 1; i++) {
             path = [
               xAxis()[j](i),
@@ -247,12 +246,12 @@ export const NavigationBars = ({
               yAxis()[j](lBound[j][i]),
             ].join(",");
           }
-          // lowerBounds
+          // Next, we iterate through the lowerBounds
           for (i = 1; i < lBound[j].length; i++) {
             path =
               path + "," + [xAxis()[j](i), yAxis()[j](lBound[j][i])].join(",");
           }
-          // upperBounds
+          // Then, through the upperBounds
           for (i = uBound[j].length - 1; i > 0; i--) {
             path =
               path + "," + [xAxis()[j](i), yAxis()[j](uBound[j][i])].join(",");
@@ -262,7 +261,7 @@ export const NavigationBars = ({
           let j = index;
           let i;
           let path;
-          // first step.
+          // first step. Needs to take first of upperBound and lowerBound
           for (i = 0; i < 1; i++) {
             path = [
               xAxis()[j](i),
@@ -271,25 +270,28 @@ export const NavigationBars = ({
               yAxis_rev()[j](lBound[j][i]),
             ].join(",");
           }
-          // lowerBounds
+          // Next, we iterate through the lowerBounds
           for (i = 1; i < lBound[j].length; i++) {
             path =
               path +
               "," +
               [xAxis()[j](i), yAxis_rev()[j](lBound[j][i])].join(",");
           }
-          // upperBounds
+          // Then, through the upperBounds
           for (i = uBound[j].length - 1; i > 0; i--) {
             path =
               path +
               "," +
               [xAxis()[j](i), yAxis_rev()[j](uBound[j][i])].join(",");
           }
-
           return path;
         }
       };
 
+      // TODO: generate the number of the objectives
+      const colors = ["lightblue", "lightgreen", "lightgrey"]
+
+      // draw the polygons to the svg
       objNames.map((_, index) => {
         const enter = selection
           .append("g")
@@ -304,13 +306,13 @@ export const NavigationBars = ({
         enter
           .append("polygon")
           .attr("transform", `translate(0 ${offset * index} )`)
-          .attr("fill", "darkgrey")
+          .attr("fill", colors[index])
           .attr("points", function (d) {
             return d.map(() => drawPolygons(index)).join(" ");
           });
       });
     }
-  }, [selection, data, dimensions, uBound, lBound]);
+  }, [selection, dimensions, uBound, lBound]);
 
   // useEffect for boundary
   useEffect(() => {
@@ -318,7 +320,6 @@ export const NavigationBars = ({
       return;
     }
     selection.selectAll(".boundary").remove(); // removes old points
-    console.log("sel", selection);
 
     bounds.map((_, index) => {
       const enter = selection
@@ -352,22 +353,21 @@ export const NavigationBars = ({
       }
       console.log("boundaryData", boundaryPointData);
 
-      const deleteOldPath = () => {
+      const deleteOldBoundPath = () => {
         enter.selectAll(".boundary").remove();
         // remove from component's referencePointData. only for visuals
-        boundaryPointData.splice(step + 1, step - 1); // step + 1, step - 1
+        boundaryPointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
         enter
           .selectAll(".boundary")
           .data(boundaryPointData)
           .enter()
           .append("path")
-          .attr("class", "refPoint")
-          .attr("stroke-dasharray", "3,3")
+          .attr("class", "boundary")
           .attr("d", () => lineGenerator(boundaryPointData))
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
-          .attr("stroke", "black")
-          .attr("stroke-width", "1px");
+          .attr("stroke", "red")
+          .attr("stroke-width", "3px");
       };
 
       // movableLineData object
@@ -387,12 +387,11 @@ export const NavigationBars = ({
           .enter()
           .append("path")
           .attr("class", "movableBound")
-          .attr("stroke-dasharray", "3,3")
           .attr("d", () => lineGenerator(movableBoundData)) // TODO: do i use lineGenerator or just normal line ?
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
-          .attr("stroke", "black")
-          .attr("stroke-width", "1px");
+          .attr("stroke", "red")
+          .attr("stroke-width", "3px");
       };
 
       enter
@@ -402,18 +401,19 @@ export const NavigationBars = ({
         .enter()
         .append("path")
         .attr("class", "boundary")
-        .attr("stroke-dasharray", "3,3")
         .attr("d", () => lineGenerator(boundaryPointData))
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", "1px")
+        .attr("stroke", "red")
+        .attr("stroke-width", "3px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>() // hopefully types are correct
             .on("start", function () {
-              deleteOldPath();
+              // what to do here?
+              console.log("start");
             }) // start
             .on("drag", function (event) {
+              deleteOldBoundPath();
               //console.log("data eka", referencePointData[steps].x, event.x)
               movableBoundData[0].y = event.y;
               movableBoundData[1].y = event.y;
@@ -429,7 +429,7 @@ export const NavigationBars = ({
             })
         );
     });
-  }, [selection, bounds, data]);
+  }, [selection, bounds]);
 
   // useEffect for refLines
   useEffect(() => {
@@ -468,11 +468,11 @@ export const NavigationBars = ({
         }
       }
 
-      const deleteOldPath = () => {
+      const deleteOldLinePath = () => {
         console.log(referencePointData);
         enter.selectAll(".refPoint").remove();
         // remove from component's referencePointData. only for visuals
-        referencePointData.splice(step + 1, step - 1); // step + 1, step - 1
+        referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
         enter
           .selectAll(".refPoint")
           .data(referencePointData)
@@ -482,8 +482,9 @@ export const NavigationBars = ({
           .attr("d", () => lineGenerator(referencePointData))
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
-          .attr("stroke", "black")
-          .attr("stroke-width", "3px");
+          .attr("stroke", "darkgreen")
+          .attr("stroke-dasharray", "4,2")
+          .attr("stroke-width", "4px");
       };
 
       // movableLineData object
@@ -506,8 +507,9 @@ export const NavigationBars = ({
           .attr("d", () => lineGenerator(movableLineData)) // TODO: do i use lineGenerator or just normal line ?
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
-          .attr("stroke", "black")
-          .attr("stroke-width", "3px");
+          .attr("stroke", "darkgreen")
+          .attr("stroke-dasharray", "4,2")
+          .attr("stroke-width", "4px");
       };
 
       // add the referenceLines. Also implemets the drag events.
@@ -521,14 +523,16 @@ export const NavigationBars = ({
         .attr("d", () => lineGenerator(referencePointData))
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", "3px")
+        .attr("stroke", "darkgreen")
+        .attr("stroke-dasharray", "4,2")
+        .attr("stroke-width", "4px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>() // hopefully types are correct
             .on("start", function () {
-              deleteOldPath();
+              console.log("start");
             }) // start
             .on("drag", function (event) {
+              deleteOldLinePath();
               //console.log("data eka", referencePointData[steps].x, event.x)
               movableLineData[0].y = event.y;
               movableLineData[1].y = event.y;

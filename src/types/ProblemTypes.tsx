@@ -27,9 +27,20 @@ type ObjectiveData = {
   nadir: number[];
 };
 
+type ProblemData = {
+  upperBounds: number[][];
+  lowerBounds: number[][];
+  refPoints: number[][];
+  boundaries: number[][];
+  stepsTaken: number;
+
+};
+
+
 export type {
   ProblemInfo,
   ProblemType,
+  ProblemData,
   MinOrMax,
   ObjectiveData,
   ObjectiveDatum,

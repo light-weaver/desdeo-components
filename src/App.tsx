@@ -8,18 +8,18 @@ import {
   exampleDataSingle3Objectives,
   exampleDataSingle5Objectives,
   exampleSingle5OldAlternative,
-  exampleProblem3ObjectiveData,
+  exampleProblemInfo3ObjectiveData,
+  exampleProblemData3ObjectiveData,
   exampleProblem5ObjectiveData
 } from "./data/ExampleData";
 import { useState, useEffect } from "react";
-
 
 // doesnt work
 const range = (max:number, min:number, l:number) => {
   Array.from({length: l}, () => (Math.random()*(max - min)) + min).sort((a,b) => b - a) 
 }
 
-let L = 10
+let L = 20
 
 let max = 10
 let min = 2
@@ -46,6 +46,7 @@ let objRef2 = Array.from({length: L+1}, () => (Math.random()*(2 - 0.3)) + 0.3)//
 let objRef3 = Array.from({length: L+1}, () => (Math.random()*(5 + 5)) - 5)//.sort((a,b) => b - a) 
 
 let bound1 = Array.from({length: L+1}, () => (Math.random()*(10 - 2)) + 2)
+
 
 // more complex data to test the component
 // refPoints and bounds need to be atleast steps long ideally same size. 
@@ -104,7 +105,12 @@ const problemData3 = {
     bound1,
     [Number.NaN]],
 }
+
+
+
+
 // simple data for building the component
+// data has +1 to steps since always needs to have the starting point / ending point as the + 1.
 const problemData2 = {
   upperBounds: [
     [10,9,7,5,5,5], // objective 1
@@ -123,7 +129,6 @@ const problemData2 = {
   ],
   steps: 5,
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
-  // big enough so its out of the picture would be one (stupid) way.
   boundary: [
     [8,8,8,6,6,6,6,6,6,6], 
     [Number.NaN],
@@ -135,7 +140,9 @@ const problemData2 = {
 
 
 function App() {
+  // new moved ref/bound points should be moved by this?
   const [selected, setSelected] = useState<number[]>([]);
+
 
   const [refData, setRefData] = useState(problemData2.refPoints)
 
@@ -145,14 +152,37 @@ function App() {
 
 
   useEffect(() => {
-   setRefData(problemData2.refPoints) 
+    const refData = problemData2.refPoints
+
+   setRefData(refData) 
   },[refData, problemData2])
+
+
+  const reDraw = (newPoint:any) => {
+          problemData2.refPoints[0].splice(3, 7)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          problemData2.refPoints[0].push(newPoint)
+          console.log(problemData2.refPoints)
+        
+          refData[0].splice(3, 7)  
+          refData[0].push(newPoint)
+          refData[0].push(newPoint)
+          refData[0].push(newPoint)
+          refData[0].push(newPoint)
+          refData[0].push(newPoint)
+          refData[0].push(newPoint)
+          console.log(refData)
+  }
 
   return (
     <>
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars
-          problemInfo={exampleProblem3ObjectiveData}
+          problemInfo={exampleProblemInfo3ObjectiveData}
           upperBound={problemData2.upperBounds}
           lowerBound={problemData2.lowerBounds}
           totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
@@ -163,15 +193,8 @@ function App() {
           handleBound={setSelected}
           onDrag={
          (newPoint:any) => {
-          console.log("drag end, muutetaan dataa, piirretään uudestaan")
-          problemData2.refPoints[0].splice(3, 7)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          console.log(problemData2.refPoints)
+            console.log("new Y value", newPoint)
+            reDraw(newPoint)
         }
           }
         />
