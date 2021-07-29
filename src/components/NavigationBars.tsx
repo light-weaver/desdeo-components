@@ -7,24 +7,18 @@ import { axisBottom, axisLeft } from "d3-axis";
 import { line, curveStepAfter } from "d3-shape";
 import "d3-transition";
 import "./Svg.css";
-import { ProblemInfo } from "../types/ProblemTypes";
+import { ProblemInfo, ProblemData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface NavigationBarsProps {
   problemInfo: ProblemInfo;
-  upperBound: number[][];
-  lowerBound: number[][];
-  totalSteps: number;
-  step: number;
-  referencePoints: number[][];
-  boundary?: number[][];
+  problemData: ProblemData;
   handleReferencePoint:
     | React.Dispatch<React.SetStateAction<number[]>>
     | ((x: number[]) => void);
   handleBound:
     | React.Dispatch<React.SetStateAction<number[]>>
     | ((x: number[]) => void);
-  onDrag: any;
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -49,15 +43,9 @@ const defaultDimensions = {
 
 export const NavigationBars = ({
   problemInfo,
-  upperBound,
-  lowerBound,
-  totalSteps,
-  step,
-  referencePoints,
-  boundary,
+  problemData,
   handleReferencePoint,
   handleBound,
-  onDrag,
   dimensionsMaybe,
 }: NavigationBarsProps) => {
   const ref = useRef(null);
@@ -73,11 +61,16 @@ export const NavigationBars = ({
   // TODO: conscruct data object that has all the useful and needed parts from navProps
 
   console.log(handleBound, handleReferencePoint);
+  const [data, setData] = useState(problemData);
+  console.log(data);
+  useEffect(() => {
+    setData(problemData);
+  }, [problemData]);
 
   // constants
-  const allSteps = totalSteps;
+  const allSteps = data.totalSteps;
   //const allSteps = 30; // this breaks drawing boundaries more than 10.
-  const steps = step;
+  const step = data.stepsTaken;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
@@ -91,25 +84,21 @@ export const NavigationBars = ({
   // States.TODO: make sense from these
   // this not used currently
   // Note: removed all data prop thingys from useEffects because they arent used right now.
-  const [data, setData] = useState(problemInfo);
-  console.log(data);
-  useEffect(() => {
-    setData(problemInfo);
-  }, [problemInfo]);
 
-  const [bounds, setBoundary] = useState(boundary); // when to use useStates ?
-  const [uBound, setUBound] = useState(upperBound);
-  const [lBound, setLBound] = useState(lowerBound);
+
+  const [bounds, setBoundary] = useState(data.boundaries); // when to use useStates ?
+  const [uBound, setUBound] = useState(data.upperBounds);
+  const [lBound, setLBound] = useState(data.lowerBounds);
   useEffect(() => {
-    setBoundary(boundary);
+    setBoundary(bounds);
     setUBound(uBound);
     setLBound(lBound);
-  }, [boundary, uBound, lBound]);
+  }, [bounds, uBound, lBound]);
 
-  const [refPoints, setRefPoints] = useState(referencePoints);
+  const [refPoints, setRefPoints] = useState(data.referencePoints);
   useEffect(() => {
-    setRefPoints(referencePoints);
-  }, [referencePoints]);
+    setRefPoints(refPoints);
+  }, [refPoints]);
 
   // Scales the objective values to plot coordinates.
   const yAxis_rev = useCallback(() => {
@@ -288,8 +277,11 @@ export const NavigationBars = ({
         }
       };
 
-      // TODO: generate the number of the objectives
-      const colors = ["lightblue", "lightgreen", "lightgrey"]
+      //const colors = ["lightblue", "lightgreen", "lightgrey"]
+      // this is fun way. Might bring colors alike though
+      const randomColor = () => {
+        return '#'+Math.floor(Math.random()*16777215).toString(16)
+      }
 
       // draw the polygons to the svg
       objNames.map((_, index) => {
@@ -306,7 +298,8 @@ export const NavigationBars = ({
         enter
           .append("polygon")
           .attr("transform", `translate(0 ${offset * index} )`)
-          .attr("fill", colors[index])
+          //.attr("fill", colors[index])
+          .attr("fill", randomColor())
           .attr("points", function (d) {
             return d.map(() => drawPolygons(index)).join(" ");
           });
@@ -336,7 +329,7 @@ export const NavigationBars = ({
         for (let ind of drawableSteps) {
           let currentBound = bounds[index][ind];
           if (currentBound === undefined) {
-            currentBound = bounds[index][steps];
+            currentBound = bounds[index][step];
           }
           if (minOrMax[index] === -1) {
             boundaryPointData.push({
@@ -424,8 +417,9 @@ export const NavigationBars = ({
               // add line coords to reference data
               console.log(event);
               let newYvalue = scaleY()[index](event.y);
-              console.log(event.x, event.y);
-              onDrag(newYvalue); // send the new value to the parent, that should redraw the component
+              bounds[index][step] = newYvalue
+              console.log("refData changed",bounds[index])
+              handleBound(bounds[index])
             })
         );
     });
@@ -453,7 +447,7 @@ export const NavigationBars = ({
       for (let ind of drawableSteps) {
         let currentPoint = refPoints[index][ind];
         if (currentPoint === undefined) {
-          currentPoint = refPoints[index][steps];
+          currentPoint = refPoints[index][step];
         }
         if (minOrMax[index] === -1) {
           referencePointData.push({
@@ -469,7 +463,7 @@ export const NavigationBars = ({
       }
 
       const deleteOldLinePath = () => {
-        console.log(referencePointData);
+        //console.log(referencePointData);
         enter.selectAll(".refPoint").remove();
         // remove from component's referencePointData. only for visuals
         referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
@@ -532,23 +526,22 @@ export const NavigationBars = ({
               console.log("start");
             }) // start
             .on("drag", function (event) {
-              deleteOldLinePath();
-              //console.log("data eka", referencePointData[steps].x, event.x)
+              deleteOldLinePath(); // delete old lines
+              // get data and move while dragging
               movableLineData[0].y = event.y;
               movableLineData[1].y = event.y;
-              //console.log("data toka", referencePointData[steps].x, event.y)
               movePath();
             })
             .on("end", function (event) {
               // add line coords to reference data
-              console.log(event);
               let newYvalue = scaleY()[index](event.y);
-              console.log(event.x, event.y);
-              onDrag(newYvalue); // send the new value to the parent, that should redraw the component
+              refPoints[index][step] = newYvalue
+              console.log("refData changed",refPoints[index])
+              handleReferencePoint(refPoints[index])
             })
         );
     });
-  }, [selection, refPoints, referencePoints, data]);
+  }, [selection, refPoints, data]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };

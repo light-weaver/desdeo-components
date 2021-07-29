@@ -56,29 +56,6 @@ const problemData = {
     objective1upper,
     objective2upper,
     objective3upper,
-  ],
-  lowerBounds: [
-    objective1lower,
-    objective2lower, 
-    objective3lower,
-  ],
-  refPoints: [
-    objRef1,
-    objRef2,
-    objRef3,
-  ],
-  steps: L,
-  boundary: [
-    bound1,
-    //[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], // objective 1
-    [Number.NaN],[Number.NaN]],
-}
-
-const problemData3 = {
-  upperBounds: [
-    objective1upper,
-    objective2upper,
-    objective3upper,
     objective1upper,
     objective2upper,
   ],
@@ -106,45 +83,18 @@ const problemData3 = {
     [Number.NaN]],
 }
 
-
-
-
-// simple data for building the component
-// data has +1 to steps since always needs to have the starting point / ending point as the + 1.
-const problemData2 = {
-  upperBounds: [
-    [10,9,7,5,5,5], // objective 1
-    [2.0,1.9,1.5,0.8,0.6,0.6], // objective 2
-    [5,4.5,4,3,2.8,2.8], // objective 3
-  ],
-  lowerBounds: [
-    [0,0.2, 0.3, 0.5,1.5,1.5], // objective 1
-    [0.0,0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
-    [-5,-4, -3,0.2,0.5,0.5], // objective 3
-  ],
-  refPoints: [
-    [7, 6, 4, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
-    [1.5,1.2,0.45, 0.45,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
-    [-1,-1,1,1,2, 2, 2,2, 2,2], // objective 3 
-  ],
-  steps: 5,
-  // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
-  boundary: [
-    [8,8,8,6,6,6,6,6,6,6], 
-    [Number.NaN],
-    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
-    [-2, -2,-2,0, 0 , 0, 0, 0, 0, 0, 0, 0]
-  ],
-}
- 
-
-
 function App() {
   // new moved ref/bound points should be moved by this?
   const [selected, setSelected] = useState<number[]>([]);
+  
+  const [refData, setRefData] = useState<number[]>([]);
+  const [bound, setBound] = useState<number[]>([]);
 
 
-  const [refData, setRefData] = useState(problemData2.refPoints)
+
+  //const [refData, setRefData] = useState<number[]>([]);
+  
+  const [pData, setData] = useState(exampleProblemData3ObjectiveData)
 
   useEffect(() => {
     console.log(selected);
@@ -152,54 +102,39 @@ function App() {
 
 
   useEffect(() => {
-    const refData = problemData2.refPoints
+   setData(pData) 
+  },[pData])
 
-   setRefData(refData) 
-  },[refData, problemData2])
+  useEffect(() => {
+   console.log(refData)
+   let newData = {...refData}
+   setRefData(newData) 
+   console.log(refData)
+  },[refData])
 
 
-  const reDraw = (newPoint:any) => {
-          problemData2.refPoints[0].splice(3, 7)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          problemData2.refPoints[0].push(newPoint)
-          console.log(problemData2.refPoints)
-        
-          refData[0].splice(3, 7)  
-          refData[0].push(newPoint)
-          refData[0].push(newPoint)
-          refData[0].push(newPoint)
-          refData[0].push(newPoint)
-          refData[0].push(newPoint)
-          refData[0].push(newPoint)
-          console.log(refData)
-  }
+
+  useEffect(() => {
+   console.log(bound)
+   setBound(bound) 
+   console.log(bound)
+  },[bound])
+
+
+
+
+
 
   return (
     <>
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
-        <NavigationBars
+        <NavigationBars 
           problemInfo={exampleProblemInfo3ObjectiveData}
-          upperBound={problemData2.upperBounds}
-          lowerBound={problemData2.lowerBounds}
-          totalSteps={100} // def esim. 100, nyt kolme koska kolmedatapistettä
-          step={problemData2.steps} // n. 1-100, nyt 1-3.
-          referencePoints={refData}
-          boundary={problemData2.boundary} // boundary for obj1, obj2
-          handleReferencePoint={setSelected}
-          handleBound={setSelected}
-          onDrag={
-         (newPoint:any) => {
-            console.log("new Y value", newPoint)
-            reDraw(newPoint)
-        }
-          }
+          problemData={pData}
+          handleReferencePoint={setRefData}
+          handleBound={setBound}
         />
       </div>
-
     </>
   );
 }

@@ -30,8 +30,9 @@ type ObjectiveData = {
 type ProblemData = {
   upperBounds: number[][];
   lowerBounds: number[][];
-  refPoints: number[][];
+  referencePoints: number[][];
   boundaries: number[][];
+  totalSteps: number;
   stepsTaken: number;
 
 };

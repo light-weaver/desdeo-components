@@ -23,19 +23,20 @@ export const exampleProblemData3ObjectiveData: ProblemData = {
     [0.0,0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
     [-5,-4, -3,0.2,0.5,0.5], // objective 3
   ],
-  refPoints: [
-    [7, 6, 4, 4, 3,3, 3, 3, 3, 3, 3], // objective 1
-    [1.5,1.2,0.45, 0.45,0.42, 0.4, 0.4, 0.4, 0.4, 0.4], // objective 2
-    [-1,-1,1,1,2, 2, 2,2, 2,2], // objective 3 
+  referencePoints: [
+    [7, 6, 4, 4, 3,3], // objective 1
+    [1.5,1.2,0.45, 0.45,0.42, 0.4],  // objective 2
+    [-1,-1,1,1,2, 2 ], // objective 3 
   ],
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   boundaries: [
-    [8,8,8,6,6,6,6,6,6,6], 
+    [8,8,8,6,6, 6], 
     [Number.NaN],
     //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
-    [-2, -2,-2,0, 0 , 0, 0, 0, 0, 0, 0, 0]
+    [-2, -2,-2,0, 0 , 0 ]
   ],
-  stepsTaken: 5,
+  totalSteps: 100,
+  stepsTaken: 5, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
 }
 
 
