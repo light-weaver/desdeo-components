@@ -7,8 +7,8 @@ export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   objectiveNames: ["Outlet Gases", "Enviromental Damage", "Profit"],
   variableNames: ["X", "Y", "Z"],
   nObjectives: 3,
-  ideal: [10,2,-5],
-  nadir: [0, 0, 5],
+  ideal: [0,0,5],
+  nadir: [10, 2,  -5],
   minimize: [1,1,-1],
 }
 
@@ -47,9 +47,9 @@ export const exampleProblem5ObjectiveData: ProblemInfo = {
   objectiveNames: ["G1", "G2", "G3", "G4", "G5"],
   variableNames: ["X", "Y", "Z", "R", "V"],
   nObjectives: 5,
-  ideal: [10,2,-5, 10, 2],
-  nadir: [0, 0, 5, 0, 0],
-  minimize: [1,1,-1, 1, 1],
+  ideal: [0,0, 5, 10, 2],
+  nadir: [10, 2, -5, 0, 0],
+  minimize: [1,1,-1, -1, -1],
 }
 
 export const exampleSingle5OldAlternative: ObjectiveData = {
