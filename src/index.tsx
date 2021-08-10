@@ -1,6 +1,4 @@
 /*
- * TODO: tämä kommentteihin ennen pull requestia.
- */
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
@@ -20,6 +18,9 @@ ReactDOM.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
+*/
+
 export { default as HorizontalBars } from "./components/HorizontalBars";
 export { default as ParallelAxes } from "./components/ParallelAxes";
 export { default as RadarChart } from "./components/RadarChart";
+export { default as NavigationBars } from "./components/NavigationBars";
