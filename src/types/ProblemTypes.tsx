@@ -1,4 +1,4 @@
-type ProblemType = "Analytical" | "Placeholder";
+type ProblemType = "Analytical" | "Discrete";
 type MinOrMax = 1 | -1;
 
 type ProblemInfo = {

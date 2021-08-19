@@ -60,7 +60,10 @@ export const NavigationBars = ({
   //console.log(data);
   useEffect(() => {
     setData(problemData);
+    console.log("käyty kissa")
   }, [problemData]);
+
+  console.log("prbinf", problemInfo)
 
   // constants
   const allSteps = data.totalSteps;
@@ -68,7 +71,7 @@ export const NavigationBars = ({
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
-  const objNames = problemInfo.objectiveNames;
+  const objNames = problemInfo.variableNames;
   const offset =
     (dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom) /
     problemInfo.nObjectives;
@@ -90,10 +93,14 @@ export const NavigationBars = ({
     setLBound(lBound);
   }, [bounds, uBound, lBound]);
 
-  const [refPoints, setRefPoints] = useState(data.referencePoints);
-  useEffect(() => {
-    setRefPoints(refPoints);
-  }, [refPoints]);
+  
+  const refPoints = data.referencePoints;
+
+  //const [refPoints, setRefPoints] = useState(data.referencePoints);
+  //useEffect(() => {
+  //  setRefPoints(refPoints);
+   // console.log("täällä käyty")
+  //}, [refPoints]);
 
   /*===================
          Scales
@@ -116,7 +123,7 @@ export const NavigationBars = ({
   // for returning the svg's coordinate value to parent in original scale.
   const scaleY = useCallback(() => {
     return minOrMax.map((d, i) => {
-      if (d === -1) {
+      if (d === 1) {
         return scaleLinear()
           .domain([plotHeight, 0])
           .range([nadir[i], ideal[i]]);
@@ -131,7 +138,7 @@ export const NavigationBars = ({
   // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
-      if (d === -1) {
+      if (d === 1) {
         return axisLeft(yAxis_rev()[i]);
       } else {
         return axisLeft(yAxis()[i]);
@@ -168,10 +175,12 @@ export const NavigationBars = ({
     if (!Number.isNaN(data[index][0])) {
       for (let ind of drawableSteps) {
         let currentPoint = data[index][ind];
+        //console.log("curr", currentPoint)
+        //console.log("ind", drawableSteps, index, ind)
         if (currentPoint === undefined) {
           currentPoint = data[index][step];
         }
-        if (minOrMax[index] === -1) {
+        if (minOrMax[index] === 1) {
           pointData.push({
             x: xAxis()[index](drawableSteps[ind]),
             y: yAxis_rev()[index](currentPoint),
@@ -244,7 +253,7 @@ export const NavigationBars = ({
         .attr("transform", (_, i) => {
           return `translate( ${-70}  ${offset * i - 10})`;
         })
-        .attr("font-size", "12px")
+        .attr("font-size", "15px")
         .attr("font-weight", "bold");
 
       // draws the polygons from upper and lowerBounds.
@@ -371,7 +380,7 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "3px");
+          .attr("stroke-width", "4px");
       };
 
       // movableLineData object
@@ -394,12 +403,11 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "3px");
+          .attr("stroke-width", "4px");
       };
 
       // add the boundaryLines. Also implements the drag events.
       enter
-        .append("g")
         .selectAll(".boundary")
         .data(boundaryPointData)
         .enter()
@@ -409,7 +417,7 @@ export const NavigationBars = ({
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
         .attr("stroke", "red")
-        .attr("stroke-width", "3px")
+        .attr("stroke-width", "4px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function () {
@@ -443,6 +451,7 @@ export const NavigationBars = ({
     }
 
     selection.selectAll(".refPoint").remove(); // removes old points
+    selection.selectAll(".movableLine").remove(); // removes old points
 
     refPoints.map((_, index) => {
       const enter = selection
@@ -457,6 +466,7 @@ export const NavigationBars = ({
 
       const deleteOldLinePath = () => {
         enter.selectAll(".refPoint").remove();
+        //enter.selectAll(".movableLine").remove();
         // remove from component's referencePointData. only for visuals
         referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
         enter
@@ -469,8 +479,8 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
-          .attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "4px");
+          //.attr("stroke-dasharray", "4,2")
+          .attr("stroke-width", "5px");
       };
 
       // movableLineData object
@@ -481,6 +491,7 @@ export const NavigationBars = ({
 
       const movePath = () => {
         // remove old movableLine
+        //enter.selectAll(".refPoint").remove();
         enter.selectAll(".movableLine").remove();
         // add new movableLine and draw it
         enter
@@ -493,13 +504,12 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
-          .attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "4px");
+          //.attr("stroke-dasharray", "4,2")
+          .attr("stroke-width", "5px");
       };
 
       // add the referenceLines. Also implements the drag events.
       enter
-        .append("g")
         .selectAll(".refPoint")
         .data(referencePointData)
         .enter()
@@ -509,13 +519,14 @@ export const NavigationBars = ({
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
-        .attr("stroke-dasharray", "4,2")
-        .attr("stroke-width", "4px")
+        //.attr("stroke-dasharray", "4,2")
+        .attr("stroke-width", "5px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function () {
               // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
               // possibly will work okay when redraw will happen correctly.
+              //deleteOldLinePath(); // delete old lines
             })
             .on("drag", function (event) {
               deleteOldLinePath(); // delete old lines
@@ -526,13 +537,21 @@ export const NavigationBars = ({
             })
             .on("end", function (event) {
               // add line coords to reference data
+              //deleteOldLinePath(); // delete old lines
               let newYvalue = scaleY()[index](event.y);
-              refPoints[index][step] = newYvalue;
-              handleReferencePoint(refPoints[index]); // call the refence handler
+              console.log(newYvalue)   
+              const newRefPoints = refPoints;
+              newRefPoints[index][step] = newYvalue;
+              //setRefPoints(newRefPoints);
+              handleReferencePoint(newRefPoints[index]); // call the refence handler
+              console.log("uudet pardit", newRefPoints)
+              //deleteOldLinePath(); // delete old lines
+              //enter.selectAll(".movableLine").remove(); // toimii muuhun, mutta jos samaa viivaa liikuttaa heti uudestaan niin poistuu
+              //movePath()
             })
         );
     });
-  }, [selection, refPoints]);
+  }, [selection, handleReferencePoint, data]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };

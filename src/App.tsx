@@ -14,7 +14,46 @@ import {
 } from "./data/ExampleData";
 import { useState, useEffect } from "react";
 
-import { ProblemData } from "./types/ProblemTypes";
+import { ProblemData, ProblemInfo } from "./types/ProblemTypes";
+
+
+const emptyData: ProblemData = {
+  upperBounds: [
+    [-2.32, -2.319], // objective 1
+    [-2.5, -2.4], // objective 2
+    [-3.8, -3.7], // objective 3
+  ],
+  lowerBounds: [
+    [-2.316, -2.317], // objective 1
+    [-1.8, -1.9], // objective 2
+    [-1.8, -1.85], // objective 3
+  ],
+  referencePoints: [
+    [-2.318, -2.318, -2.318], // objective 1
+    [-1.9,-2, -2],  // objective 2
+    [-2.6,-2.7, -2.89 ], // objective 3 
+  ],
+  // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
+  boundaries: [
+    [Number.NaN], 
+    [Number.NaN],
+    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    [Number.NaN ]
+  ],
+  totalSteps: 100,
+  stepsTaken: 2, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
+}
+const susProbInfo:ProblemInfo = {
+  problemId: 1,
+  problemName: "Sustainability problem",
+  problemType: "Discrete",
+  objectiveNames: ["x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"],
+  variableNames: ["social", "economic", "commercial"],
+  nObjectives: 3,
+  ideal: [-2.3208, -2.593, -3.9995],
+  nadir: [-2.316,-1.7273, -1.7377],
+  minimize: [-1,-1,-1],
+};
 
 
 
@@ -23,24 +62,9 @@ function App() {
   const [selected, setSelected] = useState<number[]>([]);
   const [refData, setRefData] = useState<number[]>([]);
   const [bound, setBound] = useState<number[]>([]);
-  //const [refData, setRefData] = useState<number[]>([]);
-  const [pData, setData] = useState(exampleProblemData3ObjectiveData)
 
-  useEffect(() => {
-    console.log(selected);
-  }, [selected]);
+  const [pData, setData] = useState<number[]>([]);
 
-  useEffect(() => {
-   setData(pData) 
-  },[pData])
-
-  useEffect(() => {
-   console.log("useEff ref", refData)
-    //let newData = {refData}
-   //let newData = {...refData, }
-   //setRefData(newData) 
-   //console.log(refData)
-  },[refData])
 
   useEffect(() => {
    console.log("useEff bound", bound)
@@ -50,17 +74,18 @@ function App() {
 
 
   return (
-    <>
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars 
-          problemInfo={exampleProblemInfo3ObjectiveData}
-          problemData={pData}
-          handleReferencePoint={setRefData}
+          problemInfo={susProbInfo}
+          problemData={emptyData}
+          handleReferencePoint={(ref: number[]) => 
+          setRefData(ref)}
           handleBound={setBound}
         />
       </div>
-    </>
   );
 }
 
 export default App;
+
+

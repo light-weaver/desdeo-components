@@ -3,7 +3,7 @@ import { ObjectiveData, ProblemInfo, ProblemData   } from "../types/ProblemTypes
 export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   problemId: 0,
   problemName: "TestProblem",
-  problemType: "Placeholder",
+  problemType: "Discrete",
   objectiveNames: ["Outlet Gases", "Enviromental Damage", "Profit"],
   variableNames: ["X", "Y", "Z"],
   nObjectives: 3,
@@ -43,7 +43,7 @@ export const exampleProblemData3ObjectiveData: ProblemData = {
 export const exampleProblem5ObjectiveData: ProblemInfo = {
   problemId: 1,
   problemName: "TestProblem",
-  problemType: "Placeholder",
+  problemType: "Discrete",
   objectiveNames: ["G1", "G2", "G3", "G4", "G5"],
   variableNames: ["X", "Y", "Z", "R", "V"],
   nObjectives: 5,
