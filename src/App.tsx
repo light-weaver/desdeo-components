@@ -29,26 +29,28 @@ const emptyData: ProblemData = {
     [-1.8, -1.85], // objective 3
   ],
   referencePoints: [
-    [-2.318, -2.318, -2.318], // objective 1
-    [-1.9,-2, -2],  // objective 2
-    [-2.6,-2.7, -2.89 ], // objective 3 
+    [-2.318, -2.318 ], // objective 1
+    [-1.9,-2],  // objective 2
+    [-2.6,-2.7 ], // objective 3 
   ],
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   boundaries: [
-    [Number.NaN], 
-    [Number.NaN],
-    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    //[Number.NaN], 
+    //[Number.NaN],
+    [-2.319, -2.319],
+    [-2.2, -2.2],
+    //[-3.2, -3.5],
     [Number.NaN ]
   ],
   totalSteps: 100,
-  stepsTaken: 2, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
+  stepsTaken: 1, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
 }
 const susProbInfo:ProblemInfo = {
   problemId: 1,
   problemName: "Sustainability problem",
   problemType: "Discrete",
-  objectiveNames: ["x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"],
-  variableNames: ["social", "economic", "commercial"],
+  objectiveNames: ["social", "economic", "commercial"],
+  variableNames: ["x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11"],
   nObjectives: 3,
   ideal: [-2.3208, -2.593, -3.9995],
   nadir: [-2.316,-1.7273, -1.7377],
@@ -60,17 +62,18 @@ const susProbInfo:ProblemInfo = {
 function App() {
   // new moved ref/bound points should be moved by this?
   const [selected, setSelected] = useState<number[]>([]);
-  const [refData, setRefData] = useState<number[]>([]);
-  const [bound, setBound] = useState<number[]>([]);
+
+
+
+
+  const [refData, setRefData] = useState<number[][]>(emptyData.referencePoints);
+  const [bound, setBound] = useState<number[][]>(emptyData.boundaries);
 
   const [pData, setData] = useState<number[]>([]);
 
 
-  useEffect(() => {
-   console.log("useEff bound", bound)
-   setBound(bound) 
-   //console.log(bound)
-  },[bound])
+
+
 
 
   return (
@@ -78,9 +81,15 @@ function App() {
         <NavigationBars 
           problemInfo={susProbInfo}
           problemData={emptyData}
-          handleReferencePoint={(ref: number[]) => 
-          setRefData(ref)}
-          handleBound={setBound}
+          referencePoints={refData}
+          boundaries={bound}
+          handleReferencePoint={(ref: number[][]) =>  {
+            {console.log("uusi Refpoints", ref)}
+            setRefData(ref) 
+          }}// handles should do nothing right now
+          handleBound={(bound: number[][]) => {
+            setBound(bound)
+          }}
         />
       </div>
   );

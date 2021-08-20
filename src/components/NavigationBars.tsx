@@ -13,12 +13,14 @@ import { RectDimensions } from "../types/ComponentTypes";
 interface NavigationBarsProps {
   problemInfo: ProblemInfo;
   problemData: ProblemData;
+  referencePoints: number[][];
+  boundaries: number[][];
   handleReferencePoint:
-    | React.Dispatch<React.SetStateAction<number[]>>
-    | ((x: number[]) => void);
+    | React.Dispatch<React.SetStateAction<number[][]>>
+    | ((x: number[][]) => void);
   handleBound:
-    | React.Dispatch<React.SetStateAction<number[]>>
-    | ((x: number[]) => void);
+    | React.Dispatch<React.SetStateAction<number[][]>>
+    | ((x: number[][]) => void);
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -40,6 +42,8 @@ const defaultDimensions = {
 export const NavigationBars = ({
   problemInfo,
   problemData,
+  referencePoints,
+  boundaries,
   handleReferencePoint,
   handleBound,
   dimensionsMaybe,
@@ -55,7 +59,6 @@ export const NavigationBars = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
 
-  //console.log(handleBound, handleReferencePoint);
   const [data, setData] = useState(problemData);
   //console.log(data);
   useEffect(() => {
@@ -71,7 +74,7 @@ export const NavigationBars = ({
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
-  const objNames = problemInfo.variableNames;
+  const objNames = problemInfo.objectiveNames;
   const offset =
     (dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom) /
     problemInfo.nObjectives;
@@ -84,24 +87,14 @@ export const NavigationBars = ({
   Note: removed all data prop thingys from useEffects because they arent used right now.
     ===================*/
 
-  const [bounds, setBoundary] = useState(data.boundaries);
   const [uBound, setUBound] = useState(data.upperBounds);
   const [lBound, setLBound] = useState(data.lowerBounds);
   useEffect(() => {
-    setBoundary(bounds);
     setUBound(uBound);
     setLBound(lBound);
-  }, [bounds, uBound, lBound]);
+  }, [uBound, lBound]);
 
   
-  const refPoints = data.referencePoints;
-
-  //const [refPoints, setRefPoints] = useState(data.referencePoints);
-  //useEffect(() => {
-  //  setRefPoints(refPoints);
-   // console.log("täällä käyty")
-  //}, [refPoints]);
-
   /*===================
          Scales
     ===================*/
@@ -350,12 +343,13 @@ export const NavigationBars = ({
     ===================*/
 
   useEffect(() => {
-    if (!selection || !bounds) {
+    if (!selection || !boundaries) {
       return;
     }
     selection.selectAll(".boundary").remove(); // removes old points
+    selection.selectAll(".movableBound").remove(); // removes old points
 
-    bounds.map((_, index) => {
+    boundaries.map((_, index) => {
       const enter = selection
         .append("g")
         .attr(
@@ -363,7 +357,7 @@ export const NavigationBars = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      const boundaryPointData = fillPointData(bounds, drawableSteps, index);
+      const boundaryPointData = fillPointData(boundaries, drawableSteps, index);
       console.log("boundaryData here", boundaryPointData);
 
       const deleteOldBoundPath = () => {
@@ -433,13 +427,15 @@ export const NavigationBars = ({
             })
             .on("end", function (event) {
               // add line coords to reference data
-              let newYvalue = scaleY()[index](event.y);
-              bounds[index][step] = newYvalue;
-              handleBound(bounds[index]); // call the refence handler
+              const newYvalue = scaleY()[index](event.y);
+              // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
+              const newBounds = boundaries.map((bound) => bound);
+              newBounds[index][step] = newYvalue;
+              handleBound(newBounds); // call the refence handler
             })
         );
     });
-  }, [selection, bounds]);
+  }, [selection, boundaries, handleBound]);
 
   /*===================
     useEffect for refLines
@@ -453,7 +449,7 @@ export const NavigationBars = ({
     selection.selectAll(".refPoint").remove(); // removes old points
     selection.selectAll(".movableLine").remove(); // removes old points
 
-    refPoints.map((_, index) => {
+    referencePoints.map((_, index) => {
       const enter = selection
         .append("g")
         .attr(
@@ -461,7 +457,7 @@ export const NavigationBars = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      const referencePointData = fillPointData(refPoints, drawableSteps, index);
+      const referencePointData = fillPointData(referencePoints, drawableSteps, index);
       console.log("refddttaa", referencePointData);
 
       const deleteOldLinePath = () => {
@@ -537,21 +533,15 @@ export const NavigationBars = ({
             })
             .on("end", function (event) {
               // add line coords to reference data
-              //deleteOldLinePath(); // delete old lines
-              let newYvalue = scaleY()[index](event.y);
-              console.log(newYvalue)   
-              const newRefPoints = refPoints;
+              const newYvalue = scaleY()[index](event.y);
+              // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
+              const newRefPoints = referencePoints.map((ref) => ref);
               newRefPoints[index][step] = newYvalue;
-              //setRefPoints(newRefPoints);
-              handleReferencePoint(newRefPoints[index]); // call the refence handler
-              console.log("uudet pardit", newRefPoints)
-              //deleteOldLinePath(); // delete old lines
-              //enter.selectAll(".movableLine").remove(); // toimii muuhun, mutta jos samaa viivaa liikuttaa heti uudestaan niin poistuu
-              //movePath()
+              handleReferencePoint(newRefPoints); // call the refence handler
             })
         );
     });
-  }, [selection, handleReferencePoint, data]);
+  }, [selection, handleReferencePoint,  referencePoints]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
