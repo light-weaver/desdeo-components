@@ -59,14 +59,15 @@ export const NavigationBars = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
 
-  const [data, setData] = useState(problemData);
+  //const [data, setData] = useState(problemData);
+  const data = problemData;
   //console.log(data);
-  useEffect(() => {
-    setData(problemData);
-    console.log("käyty kissa")
-  }, [problemData]);
+  //useEffect(() => {
+   // setData(problemData);
+  //  console.log("käyty kissa")
+  //}, [problemData]);
 
-  console.log("prbinf", problemInfo)
+  //console.log("prbinf", problemInfo)
 
   // constants
   const allSteps = data.totalSteps;
@@ -87,12 +88,14 @@ export const NavigationBars = ({
   Note: removed all data prop thingys from useEffects because they arent used right now.
     ===================*/
 
-  const [uBound, setUBound] = useState(data.upperBounds);
-  const [lBound, setLBound] = useState(data.lowerBounds);
-  useEffect(() => {
-    setUBound(uBound);
-    setLBound(lBound);
-  }, [uBound, lBound]);
+   const uBound = data.upperBounds
+   const lBound = data.lowerBounds
+  //const [uBound, setUBound] = useState(data.upperBounds);
+  //const [lBound, setLBound] = useState(data.lowerBounds);
+  //useEffect(() => {
+  //  setUBound(uBound);
+  //  setLBound(lBound);
+  //}, [uBound, lBound]);
 
   
   /*===================
@@ -358,7 +361,7 @@ export const NavigationBars = ({
         );
 
       const boundaryPointData = fillPointData(boundaries, drawableSteps, index);
-      console.log("boundaryData here", boundaryPointData);
+      // console.log("boundaryData here", boundaryPointData);
 
       const deleteOldBoundPath = () => {
         enter.selectAll(".boundary").remove();
@@ -458,7 +461,7 @@ export const NavigationBars = ({
         );
 
       const referencePointData = fillPointData(referencePoints, drawableSteps, index);
-      console.log("refddttaa", referencePointData);
+//      console.log("refddttaa", referencePointData);
 
       const deleteOldLinePath = () => {
         enter.selectAll(".refPoint").remove();

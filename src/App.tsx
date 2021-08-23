@@ -19,7 +19,7 @@ import { ProblemData, ProblemInfo } from "./types/ProblemTypes";
 
 const emptyData: ProblemData = {
   upperBounds: [
-    [-2.32, -2.319], // objective 1
+    [-2.3208, -2.319], // objective 1
     [-2.5, -2.4], // objective 2
     [-3.8, -3.7], // objective 3
   ],
@@ -45,6 +45,36 @@ const emptyData: ProblemData = {
   totalSteps: 100,
   stepsTaken: 1, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
 }
+
+const emptyData2: ProblemData = {
+  upperBounds: [
+    [-2.3208, -2.319, -2.319], // objective 1
+    [-2.5, -2.4, -2.4], // objective 2
+    [-3.8, -3.7, -3.7], // objective 3
+  ],
+  lowerBounds: [
+    [-2.316, -2.317, -2.317], // objective 1
+    [-1.8, -1.9, -1.9], // objective 2
+    [-1.8, -1.85, -1.55], // objective 3
+  ],
+  referencePoints: [
+    [-2.318, -2.318 ], // objective 1
+    [-1.9,-2],  // objective 2
+    [-2.6,-2.7 ], // objective 3 
+  ],
+  // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
+  boundaries: [
+    //[Number.NaN], 
+    //[Number.NaN],
+    [-2.319, -2.319],
+    [-2.2, -2.2],
+    //[-3.2, -3.5],
+    [Number.NaN ]
+  ],
+  totalSteps: 100,
+  stepsTaken: 1, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
+}
+
 const susProbInfo:ProblemInfo = {
   problemId: 1,
   problemName: "Sustainability problem",
@@ -69,10 +99,7 @@ function App() {
   const [refData, setRefData] = useState<number[][]>(emptyData.referencePoints);
   const [bound, setBound] = useState<number[][]>(emptyData.boundaries);
 
-  const [pData, setData] = useState<number[]>([]);
-
-
-
+  const [pData, setData] = useState<ProblemData>(emptyData);
 
 
 
@@ -80,11 +107,10 @@ function App() {
       <div style={{ width: "1200px", height: "1000px", float: "left" }}>
         <NavigationBars 
           problemInfo={susProbInfo}
-          problemData={emptyData}
+          problemData={pData}
           referencePoints={refData}
           boundaries={bound}
           handleReferencePoint={(ref: number[][]) =>  {
-            {console.log("uusi Refpoints", ref)}
             setRefData(ref) 
           }}// handles should do nothing right now
           handleBound={(bound: number[][]) => {
