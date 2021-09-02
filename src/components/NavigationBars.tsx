@@ -16,11 +16,11 @@ interface NavigationBarsProps {
   referencePoints: number[][];
   boundaries: number[][];
   handleReferencePoint:
-    | React.Dispatch<React.SetStateAction<number[][]>>
-    | ((x: number[][]) => void);
+  | React.Dispatch<React.SetStateAction<number[][]>>
+  | ((x: number[][]) => void);
   handleBound:
-    | React.Dispatch<React.SetStateAction<number[][]>>
-    | ((x: number[][]) => void);
+  | React.Dispatch<React.SetStateAction<number[][]>>
+  | ((x: number[][]) => void);
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -63,7 +63,7 @@ export const NavigationBars = ({
   const data = problemData;
   //console.log(data);
   //useEffect(() => {
-   // setData(problemData);
+  // setData(problemData);
   //  console.log("käyty kissa")
   //}, [problemData]);
 
@@ -88,16 +88,10 @@ export const NavigationBars = ({
   Note: removed all data prop thingys from useEffects because they arent used right now.
     ===================*/
 
-   const uBound = data.upperBounds
-   const lBound = data.lowerBounds
-  //const [uBound, setUBound] = useState(data.upperBounds);
-  //const [lBound, setLBound] = useState(data.lowerBounds);
-  //useEffect(() => {
-  //  setUBound(uBound);
-  //  setLBound(lBound);
-  //}, [uBound, lBound]);
+  const uBound = data.upperBounds
+  const lBound = data.lowerBounds
 
-  
+
   /*===================
          Scales
     ===================*/
@@ -119,7 +113,7 @@ export const NavigationBars = ({
   // for returning the svg's coordinate value to parent in original scale.
   const scaleY = useCallback(() => {
     return minOrMax.map((d, i) => {
-      if (d === 1) {
+      if (d === -1) {
         return scaleLinear()
           .domain([plotHeight, 0])
           .range([nadir[i], ideal[i]]);
@@ -134,7 +128,7 @@ export const NavigationBars = ({
   // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxises = useCallback(() => {
     return minOrMax.map((d, i) => {
-      if (d === 1) {
+      if (d === -1) {
         return axisLeft(yAxis_rev()[i]);
       } else {
         return axisLeft(yAxis()[i]);
@@ -176,7 +170,7 @@ export const NavigationBars = ({
         if (currentPoint === undefined) {
           currentPoint = data[index][step];
         }
-        if (minOrMax[index] === 1) {
+        if (minOrMax[index] === -1) {
           pointData.push({
             x: xAxis()[index](drawableSteps[ind]),
             y: yAxis_rev()[index](currentPoint),
@@ -228,8 +222,9 @@ export const NavigationBars = ({
         // y
         chart
           .append("g")
+          .style('font-size', '12px')
           .attr("transform", `translate( ${0}  ${offset * i})`)
-          .call(yAxises()[i]);
+          .call(yAxises()[i])
 
         // x
         chart
@@ -249,7 +244,7 @@ export const NavigationBars = ({
         .attr("transform", (_, i) => {
           return `translate( ${-70}  ${offset * i - 10})`;
         })
-        .attr("font-size", "15px")
+        .attr("font-size", "20px")
         .attr("font-weight", "bold");
 
       // draws the polygons from upper and lowerBounds.
@@ -311,11 +306,12 @@ export const NavigationBars = ({
       };
 
       // could have stable color list of ~ 10 colors but
-      // const colors = ["lightblue", "lightgreen", "lightgrey"]
+      const colors = ["lightblue", "lightgreen", "lightgrey"]
       // this is fun way. Might bring colors alike though
-      const randomColor = () => {
-        return "#" + Math.floor(Math.random() * 16777215).toString(16);
-      };
+      // TODO: do differently or make sure no randomizing again after redraw.
+      //const randomColor = () => {
+      //  return "#" + Math.floor(Math.random() * 16777215).toString(16);
+      //};
 
       // draw the polygons to the svg
       objNames.map((_, index) => {
@@ -332,9 +328,9 @@ export const NavigationBars = ({
         enter
           .append("polygon")
           .attr("transform", `translate(0 ${offset * index} )`)
-          //.attr("fill", colors[index])
-          .attr("fill", randomColor())
-          .attr("points", function (d) {
+          .attr("fill", colors[index])
+          //.attr("fill", randomColor())
+          .attr("points", function(d) {
             return d.map(() => drawPolygons(index)).join(" ");
           });
       });
@@ -377,7 +373,7 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "4px");
+          .attr("stroke-width", "5px");
       };
 
       // movableLineData object
@@ -400,7 +396,7 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "4px");
+          .attr("stroke-width", "5px");
       };
 
       // add the boundaryLines. Also implements the drag events.
@@ -414,23 +410,29 @@ export const NavigationBars = ({
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
         .attr("stroke", "red")
-        .attr("stroke-width", "4px")
+        .attr("stroke-width", "5px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
-            .on("start", function () {
+            .on("start", function() {
               // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
               // possibly will work okay when redraw will happen correctly.
             })
-            .on("drag", function (event) {
+            .on("drag", function(event) {
               deleteOldBoundPath(); // delete old lines
               // get data and move while dragging
               movableBoundData[0].y = event.y;
               movableBoundData[1].y = event.y;
               movePath();
             })
-            .on("end", function (event) {
+            .on("end", function(event) {
               // add line coords to reference data
-              const newYvalue = scaleY()[index](event.y);
+              let newYvalue = scaleY()[index](event.y);
+              if (newYvalue > ideal[index]) {
+                newYvalue = ideal[index]
+              }
+              else if (newYvalue < nadir[index]) {
+                newYvalue = nadir[index]
+              }
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newBounds = boundaries.map((bound) => bound);
               newBounds[index][step] = newYvalue;
@@ -461,7 +463,7 @@ export const NavigationBars = ({
         );
 
       const referencePointData = fillPointData(referencePoints, drawableSteps, index);
-//      console.log("refddttaa", referencePointData);
+      //      console.log("refddttaa", referencePointData);
 
       const deleteOldLinePath = () => {
         enter.selectAll(".refPoint").remove();
@@ -479,7 +481,7 @@ export const NavigationBars = ({
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
           //.attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "5px");
+          .attr("stroke-width", "6px");
       };
 
       // movableLineData object
@@ -504,7 +506,7 @@ export const NavigationBars = ({
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
           //.attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "5px");
+          .attr("stroke-width", "6px");
       };
 
       // add the referenceLines. Also implements the drag events.
@@ -519,24 +521,30 @@ export const NavigationBars = ({
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
         //.attr("stroke-dasharray", "4,2")
-        .attr("stroke-width", "5px")
+        .attr("stroke-width", "6px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
-            .on("start", function () {
+            .on("start", function() {
               // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
               // possibly will work okay when redraw will happen correctly.
               //deleteOldLinePath(); // delete old lines
             })
-            .on("drag", function (event) {
+            .on("drag", function(event) {
               deleteOldLinePath(); // delete old lines
               // get data and move while dragging
               movableLineData[0].y = event.y;
               movableLineData[1].y = event.y;
               movePath();
             })
-            .on("end", function (event) {
+            .on("end", function(event) {
               // add line coords to reference data
-              const newYvalue = scaleY()[index](event.y);
+              let newYvalue = scaleY()[index](event.y);
+              if (newYvalue > ideal[index]) {
+                newYvalue = ideal[index]
+              }
+              else if (newYvalue < nadir[index]) {
+                newYvalue = nadir[index]
+              }
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newRefPoints = referencePoints.map((ref) => ref);
               newRefPoints[index][step] = newYvalue;
@@ -544,7 +552,7 @@ export const NavigationBars = ({
             })
         );
     });
-  }, [selection, handleReferencePoint,  referencePoints]);
+  }, [selection, handleReferencePoint, referencePoints]);
 
   return <div ref={ref} id="container" className="svg-container"></div>;
 };
