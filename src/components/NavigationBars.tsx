@@ -31,8 +31,8 @@ interface PointData {
 }
 
 const defaultDimensions = {
-  chartHeight: 1000,
-  chartWidth: 1200,
+  chartHeight: 900,
+  chartWidth: 1400,
   marginLeft: 80,
   marginRight: 150,
   marginTop: 50,
@@ -61,13 +61,8 @@ export const NavigationBars = ({
 
   //const [data, setData] = useState(problemData);
   const data = problemData;
-  //console.log(data);
-  //useEffect(() => {
-  // setData(problemData);
-  //  console.log("käyty kissa")
-  //}, [problemData]);
 
-  //console.log("prbinf", problemInfo)
+  // TODO: check with possible bug with the last steps.. does it fit etc
 
   // constants
   const allSteps = data.totalSteps;
