@@ -31,10 +31,10 @@ interface PointData {
 }
 
 const defaultDimensions = {
-  chartHeight: 1000,
-  chartWidth: 1200,
+  chartHeight: 900,
+  chartWidth: 1300,
   marginLeft: 80,
-  marginRight: 150,
+  marginRight: 50,
   marginTop: 50,
   marginBottom: 50,
 };
@@ -71,7 +71,7 @@ export const NavigationBars = ({
     (dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom) /
     problemInfo.nObjectives;
   const plotHeight = offset - dimensions.marginTop; // size of individual plots
-  const drawableSteps = Array.from(range(0, allSteps)); // how many steps will be drawn
+  const drawableSteps = Array.from(range(0, allSteps + 5)); // how many steps will be drawn
   const uBound = data.upperBounds
   const lBound = data.lowerBounds
 
