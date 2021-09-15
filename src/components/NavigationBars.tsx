@@ -31,8 +31,8 @@ interface PointData {
 }
 
 const defaultDimensions = {
-  chartHeight: 900,
-  chartWidth: 1400,
+  chartHeight: 1000,
+  chartWidth: 1200,
   marginLeft: 80,
   marginRight: 150,
   marginTop: 50,
@@ -61,8 +61,13 @@ export const NavigationBars = ({
 
   //const [data, setData] = useState(problemData);
   const data = problemData;
+  //console.log(data);
+  //useEffect(() => {
+  // setData(problemData);
+  //  console.log("käyty kissa")
+  //}, [problemData]);
 
-  // TODO: check with possible bug with the last steps.. does it fit etc
+  //console.log("prbinf", problemInfo)
 
   // constants
   const allSteps = data.totalSteps;
@@ -94,14 +99,14 @@ export const NavigationBars = ({
   // Scales the objective values to plot coordinates.
   const yAxis_rev = useCallback(() => {
     return objNames.map((_, i) => {
-      return scaleLinear().domain([ideal[i], nadir[i]]).range([0, plotHeight]);
+      return scaleLinear().domain([nadir[i], ideal[i]]).range([0, plotHeight]);
     });
   }, [dimensions]);
 
   // Scales the objective values to plot coordinates.
   const yAxis = useCallback(() => {
     return objNames.map((_, i) => {
-      return scaleLinear().domain([nadir[i], ideal[i]]).range([0, plotHeight]);
+      return scaleLinear().domain([ideal[i], nadir[i]]).range([0, plotHeight]);
     });
   }, [dimensions]);
 
@@ -217,9 +222,8 @@ export const NavigationBars = ({
         // y
         chart
           .append("g")
-          .style('font-size', '12px')
           .attr("transform", `translate( ${0}  ${offset * i})`)
-          .call(yAxises()[i])
+          .call(yAxises()[i]);
 
         // x
         chart
@@ -239,7 +243,7 @@ export const NavigationBars = ({
         .attr("transform", (_, i) => {
           return `translate( ${-70}  ${offset * i - 10})`;
         })
-        .attr("font-size", "20px")
+        .attr("font-size", "15px")
         .attr("font-weight", "bold");
 
       // draws the polygons from upper and lowerBounds.
@@ -368,7 +372,7 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "5px");
+          .attr("stroke-width", "4px");
       };
 
       // movableLineData object
@@ -391,7 +395,7 @@ export const NavigationBars = ({
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", "none")
           .attr("stroke", "red")
-          .attr("stroke-width", "5px");
+          .attr("stroke-width", "4px");
       };
 
       // add the boundaryLines. Also implements the drag events.
@@ -405,7 +409,7 @@ export const NavigationBars = ({
         .attr("transform", `translate(0 ${offset * index} )`)
         .attr("fill", "none")
         .attr("stroke", "red")
-        .attr("stroke-width", "5px")
+        .attr("stroke-width", "4px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function() {
@@ -421,13 +425,7 @@ export const NavigationBars = ({
             })
             .on("end", function(event) {
               // add line coords to reference data
-              let newYvalue = scaleY()[index](event.y);
-              if (newYvalue > ideal[index]) {
-                newYvalue = ideal[index]
-              }
-              else if (newYvalue < nadir[index]) {
-                newYvalue = nadir[index]
-              }
+              const newYvalue = scaleY()[index](event.y);
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newBounds = boundaries.map((bound) => bound);
               newBounds[index][step] = newYvalue;
@@ -476,7 +474,7 @@ export const NavigationBars = ({
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
           //.attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "6px");
+          .attr("stroke-width", "5px");
       };
 
       // movableLineData object
@@ -501,7 +499,7 @@ export const NavigationBars = ({
           .attr("fill", "none")
           .attr("stroke", "darkgreen")
           //.attr("stroke-dasharray", "4,2")
-          .attr("stroke-width", "6px");
+          .attr("stroke-width", "5px");
       };
 
       // add the referenceLines. Also implements the drag events.
@@ -516,7 +514,7 @@ export const NavigationBars = ({
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
         //.attr("stroke-dasharray", "4,2")
-        .attr("stroke-width", "6px")
+        .attr("stroke-width", "5px")
         .call(
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function() {
@@ -534,10 +532,10 @@ export const NavigationBars = ({
             .on("end", function(event) {
               // add line coords to reference data
               let newYvalue = scaleY()[index](event.y);
-              if (newYvalue > ideal[index]) {
+              if (newYvalue < ideal[index]) {
                 newYvalue = ideal[index]
               }
-              else if (newYvalue < nadir[index]) {
+              if (newYvalue > nadir[index]) {
                 newYvalue = nadir[index]
               }
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
