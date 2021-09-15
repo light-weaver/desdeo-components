@@ -59,17 +59,8 @@ export const NavigationBars = ({
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
 
-  //const [data, setData] = useState(problemData);
-  const data = problemData;
-  //console.log(data);
-  //useEffect(() => {
-  // setData(problemData);
-  //  console.log("käyty kissa")
-  //}, [problemData]);
-
-  //console.log("prbinf", problemInfo)
-
   // constants
+  const data = problemData;
   const allSteps = data.totalSteps;
   const step = data.stepsTaken;
   const ideal = problemInfo.ideal;
@@ -81,13 +72,6 @@ export const NavigationBars = ({
     problemInfo.nObjectives;
   const plotHeight = offset - dimensions.marginTop; // size of individual plots
   const drawableSteps = Array.from(range(0, allSteps)); // how many steps will be drawn
-
-  /*===================
-          States
-  TODO: make sense from these, to redraw.
-  Note: removed all data prop thingys from useEffects because they arent used right now.
-    ===================*/
-
   const uBound = data.upperBounds
   const lBound = data.lowerBounds
 
@@ -95,13 +79,6 @@ export const NavigationBars = ({
   /*===================
          Scales
     ===================*/
-
-  // Scales the objective values to plot coordinates.
-  const yAxis_rev = useCallback(() => {
-    return objNames.map((_, i) => {
-      return scaleLinear().domain([nadir[i], ideal[i]]).range([0, plotHeight]);
-    });
-  }, [dimensions]);
 
   // Scales the objective values to plot coordinates.
   const yAxis = useCallback(() => {
@@ -112,29 +89,19 @@ export const NavigationBars = ({
 
   // for returning the svg's coordinate value to parent in original scale.
   const scaleY = useCallback(() => {
-    return minOrMax.map((d, i) => {
-      if (d === -1) {
-        return scaleLinear()
-          .domain([plotHeight, 0])
-          .range([nadir[i], ideal[i]]);
-      } else {
-        return scaleLinear()
-          .domain([plotHeight, 0])
-          .range([ideal[i], nadir[i]]);
-      }
+    return minOrMax.map((_, i) => {
+      return scaleLinear()
+        .domain([plotHeight, 0])
+        .range([nadir[i], ideal[i]]);
     });
   }, [dimensions]);
 
   // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxises = useCallback(() => {
-    return minOrMax.map((d, i) => {
-      if (d === -1) {
-        return axisLeft(yAxis_rev()[i]);
-      } else {
-        return axisLeft(yAxis()[i]);
-      }
+    return minOrMax.map((_, i) => {
+      return axisLeft(yAxis()[i]);
     });
-  }, [yAxis, yAxis_rev]);
+  }, [yAxis]);
 
   // xAxis handles the steps
   const xAxis = useCallback(() => {
@@ -165,22 +132,13 @@ export const NavigationBars = ({
     if (!Number.isNaN(data[index][0])) {
       for (let ind of drawableSteps) {
         let currentPoint = data[index][ind];
-        //console.log("curr", currentPoint)
-        //console.log("ind", drawableSteps, index, ind)
         if (currentPoint === undefined) {
           currentPoint = data[index][step];
         }
-        if (minOrMax[index] === -1) {
-          pointData.push({
-            x: xAxis()[index](drawableSteps[ind]),
-            y: yAxis_rev()[index](currentPoint),
-          });
-        } else {
-          pointData.push({
-            x: xAxis()[index](drawableSteps[ind]),
-            y: yAxis()[index](currentPoint),
-          });
-        }
+        pointData.push({
+          x: xAxis()[index](drawableSteps[ind]),
+          y: yAxis()[index](currentPoint),
+        });
       }
     }
     return pointData;
@@ -249,68 +207,32 @@ export const NavigationBars = ({
       // draws the polygons from upper and lowerBounds.
       const drawPolygons = (index: number) => {
         // if minimizing else maximizing
-        if (minOrMax[index] === 1) {
-          let j = index; // current objective index
-          let i; // iterator for the steps
-          let path; // path to be formed
-          // first step. Needs to take first of upperBound and lowerBound
-          for (i = 0; i < 1; i++) {
-            path = [
-              xAxis()[j](i),
-              yAxis()[j](uBound[j][i]),
-              xAxis()[j](i),
-              yAxis()[j](lBound[j][i]),
-            ].join(",");
-          }
-          // Next, we iterate through the lowerBounds
-          for (i = 1; i < lBound[j].length; i++) {
-            path =
-              path + "," + [xAxis()[j](i), yAxis()[j](lBound[j][i])].join(",");
-          }
-          // Then, through the upperBounds
-          for (i = uBound[j].length - 1; i > 0; i--) {
-            path =
-              path + "," + [xAxis()[j](i), yAxis()[j](uBound[j][i])].join(",");
-          }
-          return path;
-        } else {
-          let j = index;
-          let i;
-          let path;
-          // first step. Needs to take first of upperBound and lowerBound
-          for (i = 0; i < 1; i++) {
-            path = [
-              xAxis()[j](i),
-              yAxis_rev()[j](uBound[j][i]),
-              xAxis()[j](i),
-              yAxis_rev()[j](lBound[j][i]),
-            ].join(",");
-          }
-          // Next, we iterate through the lowerBounds
-          for (i = 1; i < lBound[j].length; i++) {
-            path =
-              path +
-              "," +
-              [xAxis()[j](i), yAxis_rev()[j](lBound[j][i])].join(",");
-          }
-          // Then, through the upperBounds
-          for (i = uBound[j].length - 1; i > 0; i--) {
-            path =
-              path +
-              "," +
-              [xAxis()[j](i), yAxis_rev()[j](uBound[j][i])].join(",");
-          }
-          return path;
+        let j = index; // current objective index
+        let i; // iterator for the steps
+        let path; // path to be formed
+        // first step. Needs to take first of upperBound and lowerBound
+        for (i = 0; i < 1; i++) {
+          path = [
+            xAxis()[j](i),
+            yAxis()[j](uBound[j][i]),
+            xAxis()[j](i),
+            yAxis()[j](lBound[j][i]),
+          ].join(",");
         }
+        // Next, we iterate through the lowerBounds
+        for (i = 1; i < lBound[j].length; i++) {
+          path =
+            path + "," + [xAxis()[j](i), yAxis()[j](lBound[j][i])].join(",");
+        }
+        // Then, through the upperBounds
+        for (i = uBound[j].length - 1; i > 0; i--) {
+          path =
+            path + "," + [xAxis()[j](i), yAxis()[j](uBound[j][i])].join(",");
+        }
+        return path;
       };
 
-      // could have stable color list of ~ 10 colors but
-      const colors = ["lightblue", "lightgreen", "lightgrey"]
-      // this is fun way. Might bring colors alike though
-      // TODO: do differently or make sure no randomizing again after redraw.
-      //const randomColor = () => {
-      //  return "#" + Math.floor(Math.random() * 16777215).toString(16);
-      //};
+      const colors = ["lightblue", "lightgreen", "lightgrey", "lightyellow", "cyan"]
 
       // draw the polygons to the svg
       objNames.map((_, index) => {
@@ -328,7 +250,6 @@ export const NavigationBars = ({
           .append("polygon")
           .attr("transform", `translate(0 ${offset * index} )`)
           .attr("fill", colors[index])
-          //.attr("fill", randomColor())
           .attr("points", function(d) {
             return d.map(() => drawPolygons(index)).join(" ");
           });
@@ -356,7 +277,6 @@ export const NavigationBars = ({
         );
 
       const boundaryPointData = fillPointData(boundaries, drawableSteps, index);
-      // console.log("boundaryData here", boundaryPointData);
 
       const deleteOldBoundPath = () => {
         enter.selectAll(".boundary").remove();
@@ -414,7 +334,6 @@ export const NavigationBars = ({
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function() {
               // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
-              // possibly will work okay when redraw will happen correctly.
             })
             .on("drag", function(event) {
               deleteOldBoundPath(); // delete old lines
@@ -424,8 +343,14 @@ export const NavigationBars = ({
               movePath();
             })
             .on("end", function(event) {
-              // add line coords to reference data
-              const newYvalue = scaleY()[index](event.y);
+              // add line coords to reference data              
+              let newYvalue = scaleY()[index](event.y);
+              if (newYvalue > ideal[index]) {
+                newYvalue = ideal[index]
+              }
+              if (newYvalue < nadir[index]) {
+                newYvalue = nadir[index]
+              }
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newBounds = boundaries.map((bound) => bound);
               newBounds[index][step] = newYvalue;
@@ -456,11 +381,9 @@ export const NavigationBars = ({
         );
 
       const referencePointData = fillPointData(referencePoints, drawableSteps, index);
-      //      console.log("refddttaa", referencePointData);
 
       const deleteOldLinePath = () => {
         enter.selectAll(".refPoint").remove();
-        //enter.selectAll(".movableLine").remove();
         // remove from component's referencePointData. only for visuals
         referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
         enter
@@ -485,7 +408,6 @@ export const NavigationBars = ({
 
       const movePath = () => {
         // remove old movableLine
-        //enter.selectAll(".refPoint").remove();
         enter.selectAll(".movableLine").remove();
         // add new movableLine and draw it
         enter
@@ -519,8 +441,6 @@ export const NavigationBars = ({
           drag<SVGPathElement, PointData, SVGElement>()
             .on("start", function() {
               // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
-              // possibly will work okay when redraw will happen correctly.
-              //deleteOldLinePath(); // delete old lines
             })
             .on("drag", function(event) {
               deleteOldLinePath(); // delete old lines
@@ -532,12 +452,13 @@ export const NavigationBars = ({
             .on("end", function(event) {
               // add line coords to reference data
               let newYvalue = scaleY()[index](event.y);
-              if (newYvalue < ideal[index]) {
+              if (newYvalue > ideal[index]) {
                 newYvalue = ideal[index]
               }
-              if (newYvalue > nadir[index]) {
+              if (newYvalue < nadir[index]) {
                 newYvalue = nadir[index]
               }
+              console.log(newYvalue)
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newRefPoints = referencePoints.map((ref) => ref);
               newRefPoints[index][step] = newYvalue;
