@@ -29,7 +29,7 @@ as a node module to an existing project using `npm` or `yarn` (recommended):
 or (recommended)
 
 ```
-    $> yarn install desdeo-components
+    $> yarn add desdeo-components
 ```
 
 ## Available visualizations
