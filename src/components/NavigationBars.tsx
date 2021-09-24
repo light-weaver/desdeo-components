@@ -63,8 +63,6 @@ export const NavigationBars = ({
 
   // constants
   const data = problemData;
-  console.log("Tämä data", data)
-  console.log("tämä askel", stepNumber)
   const allSteps = data.totalSteps;
   //const step = data.stepsTaken;
   const step = stepNumber;
@@ -507,7 +505,6 @@ export const NavigationBars = ({
               if (newYvalue < nadir[index]) {
                 newYvalue = nadir[index]
               }
-              console.log(newYvalue)
               // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
               const newRefPoints = referencePoints.map((ref) => ref);
               newRefPoints[index][step] = newYvalue;
