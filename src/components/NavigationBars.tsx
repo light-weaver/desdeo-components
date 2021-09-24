@@ -21,6 +21,7 @@ interface NavigationBarsProps {
   handleBound:
   | React.Dispatch<React.SetStateAction<number[][]>>
   | ((x: number[][]) => void);
+  stepNumber: number;
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -34,7 +35,7 @@ const defaultDimensions = {
   chartHeight: 900,
   chartWidth: 1300,
   marginLeft: 80,
-  marginRight: 50,
+  marginRight: 10,
   marginTop: 50,
   marginBottom: 50,
 };
@@ -46,6 +47,7 @@ export const NavigationBars = ({
   boundaries,
   handleReferencePoint,
   handleBound,
+  stepNumber,
   dimensionsMaybe,
 }: NavigationBarsProps) => {
   const ref = useRef(null);
@@ -61,8 +63,11 @@ export const NavigationBars = ({
 
   // constants
   const data = problemData;
+  console.log("Tämä data", data)
+  console.log("tämä askel", stepNumber)
   const allSteps = data.totalSteps;
-  const step = data.stepsTaken;
+  //const step = data.stepsTaken;
+  const step = stepNumber;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
@@ -74,7 +79,6 @@ export const NavigationBars = ({
   const drawableSteps = Array.from(range(0, allSteps + 5)); // how many steps will be drawn
   const uBound = data.upperBounds
   const lBound = data.lowerBounds
-
 
   /*===================
          Scales
@@ -108,14 +112,14 @@ export const NavigationBars = ({
     return objNames.map(() => {
       return scaleLinear()
         .domain([0, allSteps])
-        .range([0, dimensions.chartWidth]);
+        .range([0, dimensions.chartWidth - dimensions.marginRight - dimensions.marginLeft]);
     });
   }, [dimensions]);
 
   // calls xAxis for each objective
   const xAxises = useCallback(() => {
     return objNames.map((_, i) => {
-      return axisBottom(xAxis()[i]).tickValues([]);
+      return axisBottom(xAxis()[i]).ticks(6);
     });
   }, [xAxis]);
 
@@ -190,7 +194,8 @@ export const NavigationBars = ({
           .call(xAxises()[i]);
       });
 
-      // labels
+      // labels. Add them if needed.
+      /*
       chart
         .append("g")
         .selectAll("text")
@@ -203,6 +208,7 @@ export const NavigationBars = ({
         })
         .attr("font-size", "15px")
         .attr("font-weight", "bold");
+        */
 
       // draws the polygons from upper and lowerBounds.
       const drawPolygons = (index: number) => {
@@ -253,6 +259,49 @@ export const NavigationBars = ({
           .attr("points", function(d) {
             return d.map(() => drawPolygons(index)).join(" ");
           });
+
+        const uppLabels = selection.append('g').attr(
+          "transform",
+          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+        )
+        // upper labels
+        uppLabels
+          .selectAll('text')
+          .data([uBound[index][step - 1]])
+          .enter()
+          .append('text')
+          .text((d) => {
+            return `${d}`
+          })
+          .attr("transform", (d) => {
+            return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) - 5} )`
+          })
+          .attr('font-size', '12px')
+
+
+        const lowLabels = selection.append('g').attr(
+          "transform",
+          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+        )
+        // lower labels
+        lowLabels
+          .selectAll('text')
+          .data([lBound[index][step - 1]])
+          .enter()
+          .append('text')
+          .text((d) => {
+            return `${d}`
+          })
+          .attr("transform", (d) => {
+            if (step < 4) {
+              return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) + 20} )`
+            }
+            else {
+              return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) + 10} )`
+            }
+          })
+          .attr('font-size', '12px')
+
       });
     }
   }, [selection, dimensions, uBound, lBound]);

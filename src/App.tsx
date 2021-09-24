@@ -16,16 +16,17 @@ import { useState, useEffect } from "react";
 
 import { ProblemData, ProblemInfo } from "./types/ProblemTypes";
 
+let steps = 10
 
 const emptyData: ProblemData = {
   upperBounds: [
     [2.3208, 2.319, 2.319, 2.319, 2.319, 2.319, 2.319, 2.319, 2.319, 2.319], // objective 1
-    [2.5, 2.4], // objective 2
+    [2.5, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4, 2.4], // objective 2
     [3.8, 3.7], // objective 3
   ],
   lowerBounds: [
     [2.316, 2.317, 2.317, 2.317, 2.317, 2.317, 2.317, 2.317, 2.317, 2.319,], // objective 1
-    [1.8, 1.9], // objective 2
+    [1.8, 1.9, 1.9, 1.9, 1.9, 1.9, 1.9, 1.9, 1.9, 1.9], // objective 2
     [1.8, 1.85], // objective 3
   ],
   referencePoints: [
@@ -42,8 +43,8 @@ const emptyData: ProblemData = {
     //[-3.2, -3.5],
     [Number.NaN]
   ],
-  totalSteps: 10,
-  stepsTaken: 1, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
+  totalSteps: 11,
+  stepsTaken: 10// this must to be stepsTaken - 1 from to the bounds and refereslines given. 
 }
 
 
@@ -81,6 +82,7 @@ function App() {
         handleBound={(bound: number[][]) => {
           setBound(bound)
         }}
+        stepNumber={steps}
       />
     </div>
   );
