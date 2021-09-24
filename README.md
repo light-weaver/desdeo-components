@@ -1,46 +1,63 @@
-# Getting Started with Create React App
+# desdeo-components
+This pacakge is part of the larger ecosystem of packages belonging to DESDEO - a modular and open source
+Python framework for multiobjective optimization. You can read more about DESDEO on
+its [homepage](https://desdeo.it.jyu.fi/about).
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+`desdeo-components` is a collection of interactive visualization components tailored to be used specifically
+in interactive multiobjective optimization. This is not a stand-alone pacakge, but is meant to be used
+as a library (node module)
+in larger projects. The components are implemented as [React components](https://reactjs.org/)
+utilizing [d3](https://d3js.org/). While specific to interactive multiobjective optimization, the
+visualization components present in this package may be used in any application, which requires that
+multi-dimensional data is shown in a manner, which enables the user to interact with it. By _interact_,
+we do not mean the typical way one would interact with data in a, say, dashboard application like
+what [plotly](https://plotly.com/) offers, instead, the components are meant to facilitate interaction with
+methods that require the user to select from a discrete set of available options or to specify
+ranges for multi-dimensional data, for example.
 
-## Available Scripts
+`desdeo-components` is implemented in TypeScript.
 
-In the project directory, you can run:
+## Install
+The `desdeo-components` package can be installed as a library from npm
+([desdeo-components](https://www.npmjs.com/package/desdeo-components))
+as a node module to an existing project using `npm` or `yarn` (recommended):
 
-### `npm start`
+```
+    $> npm install desdeo-components
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+or (recommended)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```
+    $> yarn install desdeo-components
+```
 
-### `npm test`
+## Available visualizations
+Bettter examples will be added soon.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Currently the following compoents are available:
+- Horizontal axis plot
+- Parallel axis plot
+- Radar chart
+- Navigation bars
 
-### `npm run build`
+## Documentation and examples
+Documentation and examples are coming soon.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Contributing
+Anyone interested is welcome to contribute to `desdeo-components`. This project is, however, part of
+the research conducted at the University of Jyväskylä in the
+[Multiobjective Optimization (research) Group](http://www.mit.jyu.fi/optgroup/index.html).
+It is therefore a good idea to contact (one of) the maintainer(s) before starting to work on any larger
+contributions to better coordinate efforts. This is not necessary, however. Anybody can fork this repository if they
+so wish! But if you do so, we would greatly appreciate if you credited the original repository.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Contributors
+Below are listed the major contributors to `desdeo-components`. If you feel you should be part of this list, make a PR.
+- [Giovanni Misitano](https://github.com/gialmisi) - **maintainer**
+- [Juuso Pajasmaa](https://github.com/jpajasmaa)
+- [Mika Alaoutinen](https://github.com/mika-alaoutinen)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+Special thanks to Mika Alaoutinen who wrote about interactie visualization components in his 
+[MSc thesis](https://jyx.jyu.fi/handle/123456789/75938?show=full) and did a lot
+of the groundwork. His efforts ultimately led to the current iteration of `desdeo-components`.
