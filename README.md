@@ -52,6 +52,9 @@ It is therefore a good idea to contact (one of) the maintainer(s) before startin
 contributions to better coordinate efforts. This is not necessary, however. Anybody can fork this repository if they
 so wish! But if you do so, we would greatly appreciate if you credited the original repository.
 
+## Development
+More info on locally building and testing the package coming soon.
+
 ## Contributors
 Below are listed the major contributors to `desdeo-components`. If you feel you should be part of this list, make a PR.
 - [Giovanni Misitano](https://github.com/gialmisi) - **maintainer**
