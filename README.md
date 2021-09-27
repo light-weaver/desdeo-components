@@ -1,4 +1,19 @@
+
 # desdeo-components
+Table of contents:
+  * [About](#about)
+  * [Install](#install)
+  * [Available visualizations](#available-visualizations)
+    + [Horizontal axis plot](#horizontal-axis-plot)
+    + [Parallel axis plot](#parallel-axis-plot)
+    + [Radar chart](#radar-chart)
+    + [Navigation bars](#navigation-bars)
+  * [Documentation and examples](#documentation-and-examples)
+  * [Contributing](#contributing)
+  * [Development](#development)
+  * [Contributors](#contributors)
+
+## About
 This pacakge is part of the larger ecosystem of packages belonging to DESDEO - a modular and open source
 Python framework for multiobjective optimization. You can read more about DESDEO on
 its [homepage](https://desdeo.it.jyu.fi/about).
@@ -33,13 +48,21 @@ or (recommended)
 ```
 
 ## Available visualizations
-Bettter examples will be added soon.
+Better examples will be added soon.
 
-Currently the following compoents are available:
-- Horizontal axis plot
-- Parallel axis plot
-- Radar chart
-- Navigation bars
+Currently the following components are available:
+
+### Horizontal axis plot
+![horizontal-bars-plot](./resources/horizontal_bars.gif)
+
+### Parallel axis plot
+![parallel-axes-plot](./resources/parallel_axes.gif)
+
+### Radar chart
+![radar-chart-plot](./resources/radar_chart.gif)
+
+### Navigation bars
+![nav-bars-plot](./resources/navbars.gif)
 
 ## Documentation and examples
 Documentation and examples are coming soon.
