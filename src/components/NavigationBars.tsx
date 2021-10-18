@@ -21,7 +21,6 @@ interface NavigationBarsProps {
   handleBound:
   | React.Dispatch<React.SetStateAction<number[][]>>
   | ((x: number[][]) => void);
-  stepNumber: number;
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -47,7 +46,6 @@ export const NavigationBars = ({
   boundaries,
   handleReferencePoint,
   handleBound,
-  stepNumber,
   dimensionsMaybe,
 }: NavigationBarsProps) => {
   const ref = useRef(null);
@@ -63,9 +61,8 @@ export const NavigationBars = ({
 
   // constants
   const data = problemData;
-  const allSteps = data.totalSteps;
-  //const step = data.stepsTaken;
-  const step = stepNumber;
+  const allSteps = data.totalSteps; // tämä pois ja sen sijaan vaan listan viimeisin arvo piirretään aina.
+  const step = data.stepsTaken;
   const ideal = problemInfo.ideal;
   const nadir = problemInfo.nadir;
   const minOrMax = problemInfo.minimize;
@@ -76,7 +73,9 @@ export const NavigationBars = ({
   const plotHeight = offset - dimensions.marginTop; // size of individual plots
   const drawableSteps = Array.from(range(0, allSteps + 5)); // how many steps will be drawn
   const uBound = data.upperBounds
+  const ulen = uBound[0].length - 1;
   const lBound = data.lowerBounds
+  const llen = lBound[0].length - 1;
 
   /*===================
          Scales
@@ -265,14 +264,14 @@ export const NavigationBars = ({
         // upper labels
         uppLabels
           .selectAll('text')
-          .data([uBound[index][step - 1]])
+          .data([uBound[index][ulen]])
           .enter()
           .append('text')
           .text((d) => {
             return `${d}`
           })
           .attr("transform", (d) => {
-            return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) - 5} )`
+            return `translate( ${xAxis()[index](ulen) - 30} ${yAxis()[index](d) + (offset * index) - 5} )`
           })
           .attr('font-size', '12px')
 
@@ -284,7 +283,7 @@ export const NavigationBars = ({
         // lower labels
         lowLabels
           .selectAll('text')
-          .data([lBound[index][step - 1]])
+          .data([lBound[index][llen]])
           .enter()
           .append('text')
           .text((d) => {
@@ -292,10 +291,10 @@ export const NavigationBars = ({
           })
           .attr("transform", (d) => {
             if (step < 4) {
-              return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) + 20} )`
+              return `translate( ${xAxis()[index](llen) - 30} ${yAxis()[index](d) + (offset * index) + 20} )`
             }
             else {
-              return `translate( ${xAxis()[index](step) - 30} ${yAxis()[index](d) + (offset * index) + 10} )`
+              return `translate( ${xAxis()[index](llen) - 30} ${yAxis()[index](d) + (offset * index) + 10} )`
             }
           })
           .attr('font-size', '12px')
