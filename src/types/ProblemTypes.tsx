@@ -27,22 +27,25 @@ type ObjectiveData = {
   nadir: number[];
 };
 
-type ProblemData = {
+type NavigationData = {
   upperBounds: number[][];
   lowerBounds: number[][];
   referencePoints: number[][];
   boundaries: number[][];
   totalSteps: number;
   stepsTaken: number;
-
+  distance?: number;
+  reachableIdx?: number[];
+  stepsRemaining?: number;
+  navigationPoint?: number[];
 };
 
 
 export type {
   ProblemInfo,
   ProblemType,
-  ProblemData,
   MinOrMax,
   ObjectiveData,
   ObjectiveDatum,
+  NavigationData,
 };

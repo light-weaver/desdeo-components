@@ -7,12 +7,12 @@ import { axisBottom, axisLeft } from "d3-axis";
 import { line, curveStepAfter } from "d3-shape";
 import "d3-transition";
 import "./Svg.css";
-import { ProblemInfo, ProblemData } from "../types/ProblemTypes";
+import { ProblemInfo, NavigationData } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
 
 interface NavigationBarsProps {
   problemInfo: ProblemInfo;
-  problemData: ProblemData;
+  problemData: NavigationData;
   referencePoints: number[][];
   boundaries: number[][];
   handleReferencePoint:
@@ -25,7 +25,7 @@ interface NavigationBarsProps {
 }
 
 // data type to hold datapoints for ref and boundary lines
-interface PointData {
+type PointData = {
   x: number;
   y: number;
 }
