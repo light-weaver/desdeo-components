@@ -235,7 +235,7 @@ export const NavigationBars = ({
         return path;
       };
 
-      const colors = ["lightblue", "lightgreen", "lightgrey", "lightyellow", "cyan"]
+      const colors = ["lightblue", "lightgreen", "lightgrey", "lightyellow", "cyan", "#ffb6c1", "#b5651d" ]
 
       // draw the polygons to the svg
       objNames.map((_, index) => {
