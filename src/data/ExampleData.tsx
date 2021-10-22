@@ -1,4 +1,4 @@
-import { ObjectiveData, ProblemInfo, ProblemData   } from "../types/ProblemTypes";
+import { ObjectiveData, ProblemInfo, NavigationData } from "../types/ProblemTypes";
 
 export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   problemId: 0,
@@ -12,7 +12,7 @@ export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   minimize: [1,1,-1],
 }
 
-export const exampleProblemData3ObjectiveData: ProblemData = {
+export const exampleProblemData3ObjectiveData: NavigationData = {
   upperBounds: [
     [10,9,7,5,5,5], // objective 1
     [2.0,1.9,1.5,0.8,0.6,0.6], // objective 2
