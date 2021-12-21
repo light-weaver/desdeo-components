@@ -40,6 +40,21 @@ type NavigationData = {
   navigationPoint?: number[];
 };
 
+// Data for navigation (single objective)
+type NavigationDataSingleObjective = {
+  objectiveName: string;
+  objectiveID: number;
+  ideal: number;
+  nadir: number;
+  minimize: MinOrMax;
+  upperReachables: number[];
+  lowerReachables: number[];
+  referencePoints: number[];
+  totalSteps: number;
+  stepsTaken: number;
+  distance?: number;
+  reachableIdx?: number[];
+};
 
 export type {
   ProblemInfo,
@@ -48,4 +63,5 @@ export type {
   ObjectiveData,
   ObjectiveDatum,
   NavigationData,
+  NavigationDataSingleObjective,
 };
