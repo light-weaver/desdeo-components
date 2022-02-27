@@ -12,3 +12,28 @@
   top: 0;
   left: 0;
 }
+
+.navigator-block {
+  display: inline-block;
+  height: 200px;
+  width: 100%;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 0 0 0 5px #d4d4d4;
+}
+
+.navigator-input {
+  display: inline-block;
+  width: 30%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #d4d4d4;
+}
+
+.navigator-svg-container {
+  display: inline-block;
+  position: relative;
+  width: 70%;
+  height: 100%;
+  vertical-align: top;
+  overflow: visible;
+}

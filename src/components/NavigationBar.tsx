@@ -3,15 +3,26 @@ import { select, Selection } from "d3-selection";
 import { drag } from "d3-drag";
 import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
-import { axisBottom, axisLeft } from "d3-axis";
+import { axisBottom, axisLeft, axisRight } from "d3-axis";
 import { line, curveStepAfter } from "d3-shape";
 import "d3-transition";
 import "./Svg.css";
-import { NavigationData } from "../types/ProblemTypes";
+import { NavigationDataSingleObjective } from "../types/ProblemTypes";
 import { RectDimensions } from "../types/ComponentTypes";
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Card,
+  Form,
+  ListGroup,
+  Stack,
+  FormLabel,
+} from "react-bootstrap";
 
 interface NavigationBarProps {
-  objectiveData: NavigationData;
+  objectiveData: NavigationDataSingleObjective;
   handleReferencePoint:
     | React.Dispatch<React.SetStateAction<[number[], number]>>
     | ((x: [number[], number]) => void);
@@ -29,11 +40,11 @@ interface PointData {
 
 const defaultDimensions = {
   chartHeight: 200,
-  chartWidth: 1300,
-  marginLeft: 80,
-  marginRight: 10,
-  marginTop: 50,
-  marginBottom: 50,
+  chartWidth: 560,
+  marginLeft: 0,
+  marginRight: 5,
+  marginTop: 5,
+  marginBottom: 5,
 };
 
 export const NavigationBar = ({
@@ -49,9 +60,16 @@ export const NavigationBar = ({
     null,
     undefined
   >>(null);
+  const [tooltip, setTooltip] = useState<null | Selection<
+    HTMLDivElement,
+    unknown,
+    null,
+    undefined
+  >>(null);
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
+  const [referencePoint, SetReferencePoint] = useState<number[]>([]);
 
   // constants
   const data = objectiveData;
@@ -66,7 +84,9 @@ export const NavigationBar = ({
   const offset =
     dimensions.chartHeight - dimensions.marginTop - dimensions.marginBottom;
   const plotHeight = offset; // size of individual plots
-  const drawableSteps = Array.from(range(0, allSteps + 5)); // how many steps will be drawn
+  const drawableSteps = Array.from(
+    range(0, objectiveData.referencePoints.length)
+  ); // how many steps will be drawn
   const uReach = data.upperReachables;
   const lReach = data.lowerReachables;
   const referencePoints = data.referencePoints;
@@ -77,17 +97,21 @@ export const NavigationBar = ({
 
   // Scales the objective values to plot coordinates.
   const objValToYPixel = useCallback(() => {
-    return scaleLinear().domain([ideal, nadir]).range([0, plotHeight]);
+    return scaleLinear().domain([nadir, ideal]).range([0, plotHeight]);
   }, [ideal, nadir, plotHeight]);
 
   // for returning the svg's coordinate value to parent in original scale.
   const yPixelToObjVal = useCallback(() => {
-    return scaleLinear().domain([plotHeight, 0]).range([nadir, ideal]);
+    return scaleLinear().domain([plotHeight, 0]).range([ideal, nadir]);
   }, [plotHeight, ideal, nadir]);
 
   // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxis = useCallback(() => {
-    return axisLeft(objValToYPixel());
+    return axisLeft(objValToYPixel())
+      .ticks(5)
+      .tickSize(
+        dimensions.chartWidth - dimensions.marginLeft - dimensions.marginRight
+      );
   }, [objValToYPixel]);
 
   // xAxis handles the steps
@@ -135,20 +159,28 @@ export const NavigationBar = ({
      ===================*/
 
   useEffect(() => {
-    if (!selection) {
+    if (!selection || !tooltip) {
       // add svg and update selection
       const renderH = dimensions.chartHeight;
       const renderW = dimensions.chartWidth;
 
       const newSelection = select(ref.current)
-        .classed("svg-container", true)
+        .classed("navigator-svg-container", true)
         .append("svg")
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", `0 0 ${renderW} ${renderH}`)
         .classed("svg-content", true);
 
+      const Tooltip = select(ref.current)
+        .append("div")
+        .style("opacity", 0)
+        .attr("class", "tooltip")
+        .style("background-color", "#00000000");
+      //.style("position", "relative");
+
       // update selection
       setSelection(newSelection);
+      setTooltip(Tooltip);
     } else {
       // clear the svg of its children
       console.log("svg clear!");
@@ -162,14 +194,51 @@ export const NavigationBar = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         );
 
-      // y
-      chart.append("g").attr("transform", `translate( ${0} )`).call(yAxis());
+      var toptext = "";
+      var bottomtext = "";
+      if (objectiveData.minimize === 1) {
+        toptext = "Nadir = " + objectiveData.nadir;
+        bottomtext = "Ideal = " + objectiveData.ideal;
+      }
+      if (objectiveData.minimize === -1) {
+        bottomtext = "Nadir = " + objectiveData.nadir;
+        toptext = "Ideal = " + objectiveData.ideal;
+      }
+      // y axis
+      chart
+        .append("g")
+        .attr(
+          "transform",
+          `translate( ${
+            dimensions.chartWidth -
+            dimensions.marginLeft -
+            dimensions.marginRight
+          } )`
+        )
+        .call(yAxis())
+        .call((g) =>
+          g
+            .selectAll(".tick:not(:first-of-type) text")
+            .attr("x", -4)
+            .attr("dy", -4)
+        )
+        .call((g) =>
+          g.selectAll(".tick:first-of-type text").attr("x", -4).attr("dy", 10)
+        )
+        .call((g) => g.selectAll(".tick:first-of-type text").text(toptext))
+        .call((g) => g.selectAll(".tick:last-of-type text").text(bottomtext))
+        .call((g) =>
+          g
+            .selectAll(".tick line")
+            .attr("stroke-opacity", 0.5)
+            .attr("stroke-dasharray", "2,2")
+        );
 
-      // x
+      /*       // x
       chart
         .append("g")
         .attr("transform", `translate(0 ${plotHeight} )`)
-        .call(xAxis());
+        .call(xAxis()); */
 
       // labels. Add them if needed.
       /*
@@ -218,7 +287,7 @@ export const NavigationBar = ({
         return path;
       };
 
-      const color = "lightgreen";
+      const color = "#10ff10aa";
 
       // draw the polygons to the svg
 
@@ -234,10 +303,22 @@ export const NavigationBar = ({
 
       enter
         .append("polygon")
-        .attr("transform", `translate(0 ${offset} )`)
+        .attr("transform", `translate(0)`)
         .attr("fill", color)
         .attr("points", function (d) {
           return d.map(() => drawPolygons()).join(" ");
+        })
+        .on("mouseover", function () {
+          tooltip.style("opacity", 0.9);
+        })
+        .on("mousemove", function (event) {
+          tooltip
+            .html(yPixelToObjVal()(event.y) + 1)
+            .style("left", event.x - 240 + "px")
+            .style("top", event.y + "px");
+        })
+        .on("mouseout", function (d) {
+          tooltip.transition().duration(500).style("opacity", 0);
         });
 
       const uppLabels = selection
@@ -256,7 +337,7 @@ export const NavigationBar = ({
           return `${d}`;
         })
         .attr("transform", (d) => {
-          return `translate( ${stepValtoXPixel()(step) - 30} ${
+          return `translate( ${stepValtoXPixel()(step - 1) + 5} ${
             objValToYPixel()(d) - 5
           } )`;
         })
@@ -279,18 +360,18 @@ export const NavigationBar = ({
         })
         .attr("transform", (d) => {
           if (step < 4) {
-            return `translate( ${stepValtoXPixel()(step) - 30} ${
+            return `translate( ${stepValtoXPixel()(step - 1) + 5} ${
               objValToYPixel()(d) + 20
             } )`;
           } else {
-            return `translate( ${stepValtoXPixel()(step) - 30} ${
+            return `translate( ${stepValtoXPixel()(step - 1) + 5} ${
               objValToYPixel()(d) + 10
             } )`;
           }
         })
         .attr("font-size", "12px");
     }
-  }, [selection, dimensions, uReach, lReach]);
+  }, [selection, tooltip, dimensions, uReach, lReach]);
 
   /*===================
     useEffect for boundary
@@ -421,6 +502,7 @@ export const NavigationBar = ({
       enter.selectAll(".refPoint").remove();
       // remove from component's referencePointData. only for visuals
       referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
+      console.log(referencePointData);
       enter
         .selectAll(".refPoint")
         .data(referencePointData)
@@ -432,13 +514,13 @@ export const NavigationBar = ({
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
         //.attr("stroke-dasharray", "4,2")
-        .attr("stroke-width", "5px");
+        .attr("stroke-width", "3px");
     };
 
     // movableLineData object
     let movableLineData: PointData[] = [
-      { x: stepValtoXPixel()(step), y: 0 }, // now needs some data to work. x coord will always be the step coord
-      { x: dimensions.chartWidth, y: 0 }, //. y will change so it doenst matter here
+      { x: stepValtoXPixel()(step - 1), y: 0 }, // now needs some data to work. x coord will always be the step coord
+      { x: dimensions.chartWidth - dimensions.marginRight, y: 0 }, //. y will change so it doenst matter here
     ];
 
     const movePath = () => {
@@ -456,7 +538,7 @@ export const NavigationBar = ({
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
         //.attr("stroke-dasharray", "4,2")
-        .attr("stroke-width", "5px");
+        .attr("stroke-width", "3px");
     };
 
     // add the referenceLines. Also implements the drag events.
@@ -471,14 +553,14 @@ export const NavigationBar = ({
       .attr("fill", "none")
       .attr("stroke", "darkgreen")
       //.attr("stroke-dasharray", "4,2")
-      .attr("stroke-width", "5px")
+      .attr("stroke-width", "3px")
       .call(
         drag<SVGPathElement, PointData, SVGElement>()
           .on("start", function () {
             // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
           })
           .on("drag", function (event) {
-            deleteOldLinePath(); // delete old lines
+            //deleteOldLinePath(); // delete old lines
             // get data and move while dragging
             movableLineData[0].y = event.y;
             movableLineData[1].y = event.y;
@@ -487,21 +569,122 @@ export const NavigationBar = ({
           .on("end", function (event) {
             // add line coords to reference data
             let newYvalue = yPixelToObjVal()(event.y);
-            if (newYvalue > ideal) {
+            console.log(newYvalue);
+            if (newYvalue < ideal) {
               newYvalue = ideal;
             }
-            if (newYvalue < nadir) {
+            if (newYvalue > nadir) {
               newYvalue = nadir;
             }
+            SetReferencePoint(newYvalue);
+            console.log(newYvalue);
             // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
-            const newRefPoints = referencePoints.map((ref) => ref);
-            newRefPoints[step] = newYvalue;
-            handleReferencePoint([newRefPoints, objectiveID]); // call the refence handler
+            //const newRefPoints = referencePoints.map((ref) => ref);
+            //newRefPoints[step] = newYvalue;
+            //handleReferencePoint([newRefPoints, objectiveID]); // call the refence handler
           })
       );
   }, [selection, handleReferencePoint, referencePoints]);
 
-  return <div ref={ref} id="container" className="svg-container"></div>;
+  return (
+    <div className="navigator-block">
+      <div className="navigator-input">
+        <div>
+          <b>{objectiveData.objectiveName}</b>{" "}
+          {objectiveData.minimize === 1 && "(Minimize)"}
+          {objectiveData.minimize === -1 && "(Maximize)"}
+        </div>
+        <div>
+          {objectiveData.minimize === 1 && (
+            <div>
+              {/* <div>Nadir value: {objectiveData.nadir}</div> */}
+              <div>
+                Worst reachable value:{" "}
+                {
+                  objectiveData.upperReachables[
+                    objectiveData.upperReachables.length - 1
+                  ]
+                }{" "}
+                {" ▼"}
+              </div>
+            </div>
+          )}
+        </div>
+        <div>
+          {objectiveData.minimize === -1 && (
+            <div>
+              {/* <div>Ideal = {objectiveData.ideal}</div> */}
+              <div>
+                Best reachable value:{" "}
+                {
+                  objectiveData.upperReachables[
+                    objectiveData.upperReachables.length - 1
+                  ]
+                }{" "}
+                {" ▲"}
+              </div>
+            </div>
+          )}
+        </div>
+        <Form>
+          <Form.Group controlId="referencevalue">
+            <Form.Control
+              key={"controlof{objectiveData.objectiveName}"}
+              defaultValue={
+                objectiveData.referencePoints[
+                  objectiveData.referencePoints.length - 1
+                ]
+              }
+              value={referencePoint}
+              type="number"
+              placeholder="Enter desired value"
+            />
+          </Form.Group>
+          <Form.Group controlId="bouldvalue">
+            <Form.Control type="number" placeholder="Enter bound value" />
+          </Form.Group>
+        </Form>
+        <div>
+          {objectiveData.minimize === 1 && (
+            <div>
+              <div>
+                Best reachable value:{" "}
+                {
+                  objectiveData.lowerReachables[
+                    objectiveData.lowerReachables.length - 1
+                  ]
+                }{" "}
+                {" ▲"}
+              </div>
+              {/* <div>Ideal = {objectiveData.ideal}</div> */}
+            </div>
+          )}
+        </div>
+        <div>
+          {objectiveData.minimize === -1 && (
+            <div>
+              <div>
+                Worst reachable value:{" "}
+                {
+                  objectiveData.lowerReachables[
+                    objectiveData.lowerReachables.length - 1
+                  ]
+                }{" "}
+                {" ▼"}
+              </div>
+              {/* <div>Nadir value: {objectiveData.nadir}</div> */}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        ref={ref}
+        id={objectiveData.objectiveName + "-chart"}
+        className="navigator-svg-container"
+      ></div>
+    </div>
+  );
 };
 
-export default NavigationBars;
+export default NavigationBar;

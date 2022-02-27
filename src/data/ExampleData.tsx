@@ -1,4 +1,9 @@
-import { ObjectiveData, ProblemInfo, NavigationData } from "../types/ProblemTypes";
+import {
+  ObjectiveData,
+  ProblemInfo,
+  NavigationData,
+  NavigationDataSingleObjective,
+} from "../types/ProblemTypes";
 
 export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   problemId: 0,
@@ -7,38 +12,37 @@ export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
   objectiveNames: ["Outlet Gases", "Enviromental Damage", "Profit"],
   variableNames: ["X", "Y", "Z"],
   nObjectives: 3,
-  ideal: [0,0,5],
-  nadir: [10, 2,  -5],
-  minimize: [1,1,-1],
-}
+  ideal: [0, 0, 5],
+  nadir: [10, 2, -5],
+  minimize: [1, 1, -1],
+};
 
 export const exampleProblemData3ObjectiveData: NavigationData = {
   upperBounds: [
-    [10,9,7,5,5,5], // objective 1
-    [2.0,1.9,1.5,0.8,0.6,0.6], // objective 2
-    [5,4.5,4,3,2.8,2.8], // objective 3
+    [10, 9, 7, 5, 5, 5], // objective 1
+    [2.0, 1.9, 1.5, 0.8, 0.6, 0.6], // objective 2
+    [5, 4.5, 4, 3, 2.8, 2.8], // objective 3
   ],
   lowerBounds: [
-    [0,0.2, 0.3, 0.5,1.5,1.5], // objective 1
-    [0.0,0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
-    [-5,-4, -3,0.2,0.5,0.5], // objective 3
+    [0, 0.2, 0.3, 0.5, 1.5, 1.5], // objective 1
+    [0.0, 0.05, 0.1, 0.15, 0.2, 0.2], // objective 2
+    [-5, -4, -3, 0.2, 0.5, 0.5], // objective 3
   ],
   referencePoints: [
-    [7, 6, 4, 4, 3,3], // objective 1
-    [1.5,1.2,0.45, 0.45,0.42, 0.4],  // objective 2
-    [-1,-1,1,1,2, 2 ], // objective 3 
+    [7, 6, 4, 4, 3, 3], // objective 1
+    [1.5, 1.2, 0.45, 0.45, 0.42, 0.4], // objective 2
+    [-1, -1, 1, 1, 2, 2], // objective 3
   ],
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   boundaries: [
-    [8,8,8,6,6, 6], 
+    [8, 8, 8, 6, 6, 6],
     [Number.NaN],
     //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
-    [-2, -2,-2,0, 0 , 0 ]
+    [-2, -2, -2, 0, 0, 0],
   ],
   totalSteps: 100,
-  stepsTaken: 5, // this must to be stepsTaken - 1 from to the bounds and refereslines given. 
-}
-
+  stepsTaken: 5, // this must to be stepsTaken - 1 from to the bounds and refereslines given.
+};
 
 export const exampleProblem5ObjectiveData: ProblemInfo = {
   problemId: 1,
@@ -47,10 +51,10 @@ export const exampleProblem5ObjectiveData: ProblemInfo = {
   objectiveNames: ["G1", "G2", "G3", "G4", "G5"],
   variableNames: ["X", "Y", "Z", "R", "V"],
   nObjectives: 5,
-  ideal: [0,0, 5, 10, 2],
+  ideal: [0, 0, 5, 10, 2],
   nadir: [10, 2, -5, 0, 0],
-  minimize: [1,1,-1, -1, -1],
-}
+  minimize: [1, 1, -1, -1, -1],
+};
 
 export const exampleSingle5OldAlternative: ObjectiveData = {
   values: [
@@ -160,3 +164,17 @@ export const exampleDataTen4Objectives: ObjectiveData = {
     },
   ],
 };
+
+export const exampleDataSingleObjectiveNavigation: NavigationDataSingleObjective =
+  {
+    objectiveName: "Test",
+    objectiveID: 1,
+    ideal: 0,
+    nadir: 10,
+    minimize: 1,
+    upperReachables: [10, 9, 8, 7, 6, 6],
+    lowerReachables: [0, 1, 1, 2, 3, 4],
+    referencePoints: [1, 2, 3, 4, 5, 6],
+    totalSteps: 10,
+    stepsTaken: 6,
+  };
