@@ -18,6 +18,10 @@ export const exampleProblemInfo3ObjectiveData: ProblemInfo = {
 };
 
 export const exampleProblemData3ObjectiveData: NavigationData = {
+  objectiveNames: ["Objective 1", "Objective 2", "Objective 3"],
+  minimize: [1, 1, 1],
+  ideal: [0, 0, -5],
+  nadir: [10, 2, 5],
   upperBounds: [
     [10, 9, 7, 5, 5, 5], // objective 1
     [2.0, 1.9, 1.5, 0.8, 0.6, 0.6], // objective 2
@@ -30,17 +34,16 @@ export const exampleProblemData3ObjectiveData: NavigationData = {
   ],
   referencePoints: [
     [7, 6, 4, 4, 3, 3], // objective 1
-    [1.5, 1.2, 0.45, 0.45, 0.42, 0.4], // objective 2
+    [1.5, 1.2, 0.45, 0.45, 0.42, 0.42], // objective 2
     [-1, -1, 1, 1, 2, 2], // objective 3
   ],
   // boundary needs to have set default value or some value for the objective if its not used so the order doenst go wrong
   boundaries: [
     [8, 8, 8, 6, 6, 6],
-    [Number.NaN],
-    //[0.7, 0.7,0.7,0.7,0.7,0.7,1, 1, 1, 1],
+    [1, 1, 1, 0.7, 0.7, 0.6],
     [-2, -2, -2, 0, 0, 0],
   ],
-  totalSteps: 100,
+  totalSteps: 15,
   stepsTaken: 5, // this must to be stepsTaken - 1 from to the bounds and refereslines given.
 };
 
@@ -175,6 +178,7 @@ export const exampleDataSingleObjectiveNavigation: NavigationDataSingleObjective
     upperReachables: [10, 9, 8, 7, 6, 6],
     lowerReachables: [0, 1, 1, 2, 3, 4],
     referencePoints: [1, 2, 3, 4, 5, 6],
+    bounds: [1, 1, 1, 1, 1, 1],
     totalSteps: 10,
     stepsTaken: 6,
   };

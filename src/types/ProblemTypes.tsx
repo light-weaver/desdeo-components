@@ -28,6 +28,10 @@ type ObjectiveData = {
 };
 
 type NavigationData = {
+  objectiveNames: string[];
+  ideal: number[];
+  nadir: number[];
+  minimize: MinOrMax[];
   upperBounds: number[][];
   lowerBounds: number[][];
   referencePoints: number[][];
@@ -50,6 +54,7 @@ type NavigationDataSingleObjective = {
   upperReachables: number[];
   lowerReachables: number[];
   referencePoints: number[];
+  bounds: number[];
   totalSteps: number;
   stepsTaken: number;
   distance?: number;

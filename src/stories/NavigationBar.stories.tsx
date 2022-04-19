@@ -23,6 +23,8 @@ const Template: Story<ComponentProps<typeof NavigationBar>> = (args) => {
 export const NavigationSingleObjective = Template.bind({});
 NavigationSingleObjective.args = {
   objectiveData: exampleDataSingleObjectiveNavigation,
-  handleReferencePoint: (x: [number[], number]) => console.log(x),
-  handleBound: (x: [number[], number]) => console.log(x),
+  handleReferenceValue: (x: [number]) => console.log(x),
+  handleBoundValue: (x: [number]) => console.log(x),
+  newStep: exampleDataSingleObjectiveNavigation.stepsTaken,
+  handleNewStep: (x: [number]) => console.log(x),
 };

@@ -4,7 +4,7 @@ import { drag } from "d3-drag";
 import { scaleLinear } from "d3-scale";
 import { range } from "d3-array";
 import { axisBottom, axisLeft, axisRight } from "d3-axis";
-import { line, curveStepAfter } from "d3-shape";
+import { line, curveStepAfter, curveStepBefore } from "d3-shape";
 import "d3-transition";
 import "./Svg.css";
 import { NavigationDataSingleObjective } from "../types/ProblemTypes";
@@ -23,12 +23,16 @@ import {
 
 interface NavigationBarProps {
   objectiveData: NavigationDataSingleObjective;
-  handleReferencePoint:
-    | React.Dispatch<React.SetStateAction<[number[], number]>>
-    | ((x: [number[], number]) => void);
-  handleBound:
-    | React.Dispatch<React.SetStateAction<[number[], number]>>
-    | ((x: [number[], number]) => void);
+  handleReferenceValue:
+    | React.Dispatch<React.SetStateAction<[number, number]>>
+    | ((x: [number, number]) => void);
+  handleBoundValue:
+    | React.Dispatch<React.SetStateAction<[number, number]>>
+    | ((x: [number, number]) => void);
+  handleNewStep:
+    | React.Dispatch<React.SetStateAction<number>>
+    | ((x: number) => void);
+  newStep: number | undefined;
   dimensionsMaybe?: RectDimensions;
 }
 
@@ -49,8 +53,10 @@ const defaultDimensions = {
 
 export const NavigationBar = ({
   objectiveData,
-  handleReferencePoint,
-  handleBound,
+  handleReferenceValue,
+  handleBoundValue,
+  handleNewStep,
+  newStep,
   dimensionsMaybe,
 }: NavigationBarProps) => {
   const ref = useRef(null);
@@ -69,7 +75,8 @@ export const NavigationBar = ({
   const [dimensions] = useState(
     dimensionsMaybe ? dimensionsMaybe : defaultDimensions
   );
-  const [referencePoint, SetReferencePoint] = useState<number[]>([]);
+  const [referencePoint, SetReferencePoint] = useState<number>();
+  const [boundValue, SetBoundValue] = useState<number>();
 
   // constants
   const data = objectiveData;
@@ -90,20 +97,30 @@ export const NavigationBar = ({
   const uReach = data.upperReachables;
   const lReach = data.lowerReachables;
   const referencePoints = data.referencePoints;
+  const bounds = data.bounds;
 
   /*===================
          Scales
     ===================*/
 
+  let top: number, bottom: number;
+  if (minOrMax === 1) {
+    top = nadir;
+    bottom = ideal;
+  } else {
+    top = ideal;
+    bottom = nadir;
+  }
+
   // Scales the objective values to plot coordinates.
   const objValToYPixel = useCallback(() => {
-    return scaleLinear().domain([nadir, ideal]).range([0, plotHeight]);
-  }, [ideal, nadir, plotHeight]);
+    return scaleLinear().domain([top, bottom]).range([0, plotHeight]);
+  }, [top, bottom, plotHeight]);
 
   // for returning the svg's coordinate value to parent in original scale.
   const yPixelToObjVal = useCallback(() => {
-    return scaleLinear().domain([plotHeight, 0]).range([ideal, nadir]);
-  }, [plotHeight, ideal, nadir]);
+    return scaleLinear().domain([plotHeight, 0]).range([bottom, top]);
+  }, [plotHeight, bottom, top]);
 
   // get the correct yAxis depending on miniming or maximizing. Reversed when maximizing. Maximal is always at the top.
   const yAxis = useCallback(() => {
@@ -124,6 +141,15 @@ export const NavigationBar = ({
       ]);
   }, [dimensions, allSteps]);
 
+  const xPixelToStepVal = useCallback(() => {
+    return scaleLinear()
+      .domain([
+        0,
+        dimensions.chartWidth - dimensions.marginRight - dimensions.marginLeft,
+      ])
+      .range([0, allSteps]);
+  }, [dimensions, allSteps]);
+
   // calls xAxis for the objective
   const xAxis = useCallback(() => {
     return axisBottom(stepValtoXPixel()).ticks(6);
@@ -136,7 +162,11 @@ export const NavigationBar = ({
     .curve(curveStepAfter);
 
   // fills pointData objects to use drawing both reference and boundary lines
-  const fillPointData = (data: any, drawableSteps: number[]) => {
+  const fillPointData = (
+    data: any,
+    drawableSteps: number[],
+    totalSteps: number
+  ) => {
     let pointData: PointData[] = [];
     // if data is NaN we return nothing e.g. if bounds is not set it has Number.NaN in first index and we skip that objective
     if (!Number.isNaN(data[0])) {
@@ -146,7 +176,15 @@ export const NavigationBar = ({
           currentPoint = data[step];
         }
         pointData.push({
-          x: stepValtoXPixel()(drawableSteps[ind]),
+          x: stepValtoXPixel()(ind),
+          y: objValToYPixel()(currentPoint),
+        });
+      }
+      pointData.pop();
+      let currentPoint = data[data.length - 1];
+      for (let ind = drawableSteps.length; ind <= totalSteps; ind++) {
+        pointData.push({
+          x: stepValtoXPixel()(ind),
           y: objValToYPixel()(currentPoint),
         });
       }
@@ -175,8 +213,10 @@ export const NavigationBar = ({
         .append("div")
         .style("opacity", 0)
         .attr("class", "tooltip")
-        .style("background-color", "#00000000");
-      //.style("position", "relative");
+        .style("background-color", "#FFFFFFFF")
+        .style("border", "solid")
+        .style("border-width", "1px")
+        .style("border-radius", "5px");
 
       // update selection
       setSelection(newSelection);
@@ -257,7 +297,7 @@ export const NavigationBar = ({
         */
 
       // draws the polygons from upper and lowerBounds.
-      const drawPolygons = () => {
+      /*       const drawPolygons = () => {
         // if minimizing else maximizing
         let i; // iterator for the steps
         let path; // path to be formed
@@ -285,11 +325,30 @@ export const NavigationBar = ({
             [stepValtoXPixel()(i), objValToYPixel()(uReach[i])].join(",");
         }
         return path;
-      };
+      }; */
 
+      const drawPolygons2 = () => {
+        let poly = [
+          { step: 0, objval: uReach[0] },
+          { step: 0, objval: lReach[0] },
+        ];
+        let i;
+        for (i = 1; i < lReach.length; i++) {
+          poly.push({ step: i, objval: lReach[i] });
+        }
+        for (i = uReach.length - 1; i > 0; i--) {
+          poly.push({ step: i, objval: uReach[i] });
+        }
+        return poly;
+      };
       const color = "#10ff10aa";
 
       // draw the polygons to the svg
+      let dataPoly = drawPolygons2();
+      var dataPolyYPixels = dataPoly.map((x) => [
+        stepValtoXPixel()(x.step),
+        objValToYPixel()(x.objval),
+      ]);
 
       const enter = selection
         .append("g")
@@ -298,7 +357,7 @@ export const NavigationBar = ({
           `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
         )
         .selectAll("polygon")
-        .data([drawableSteps])
+        .data([dataPoly])
         .enter();
 
       enter
@@ -306,19 +365,34 @@ export const NavigationBar = ({
         .attr("transform", `translate(0)`)
         .attr("fill", color)
         .attr("points", function (d) {
-          return d.map(() => drawPolygons()).join(" ");
+          return d
+            .map(function (d) {
+              return [
+                stepValtoXPixel()(d.step),
+                objValToYPixel()(d.objval),
+              ].join(",");
+            })
+            .join(" ");
         })
         .on("mouseover", function () {
           tooltip.style("opacity", 0.9);
         })
         .on("mousemove", function (event) {
+          /* let distances = dataPolyYPixels.map((x) =>
+            Math.sqrt(
+              Math.pow(event.layerX - x[0], 2) +
+                Math.pow(event.layerY - x[1], 2)
+            )
+          );
+          let index: number = distances.indexOf(Math.min(...distances));
+          //console.log(datum[index].objval); */
           tooltip
-            .html(yPixelToObjVal()(event.y) + 1)
-            .style("left", event.x - 240 + "px")
-            .style("top", event.y + "px");
+            .html(yPixelToObjVal()(event.layerY).toPrecision(4))
+            .style("left", event.layerX + 25 + "px")
+            .style("top", event.layerY + 25 + "px");
         })
-        .on("mouseout", function (d) {
-          tooltip.transition().duration(500).style("opacity", 0);
+        .on("mouseleave", function () {
+          tooltip.transition().duration(1000).style("opacity", 0);
         });
 
       const uppLabels = selection
@@ -373,115 +447,117 @@ export const NavigationBar = ({
     }
   }, [selection, tooltip, dimensions, uReach, lReach]);
 
-  /*===================
+  /* ===================
     useEffect for boundary
     ===================*/
-
-  /*   useEffect(() => {
-    if (!selection || !boundaries) {
+  const updateBound = (boundvalue: number) => {
+    if (boundvalue < lReach[lReach.length - 1]) {
+      boundvalue = lReach[lReach.length - 1];
+    }
+    if (boundvalue > uReach[uReach.length - 1]) {
+      boundvalue = uReach[uReach.length - 1];
+    }
+    SetBoundValue(boundvalue);
+    handleBoundValue([boundvalue, objectiveID]);
+    if (!selection) {
       return;
     }
+
     selection.selectAll(".boundary").remove(); // removes old points
     selection.selectAll(".movableBound").remove(); // removes old points
 
-    boundaries.map((_, index) => {
-      const enter = selection
-        .append("g")
-        .attr(
-          "transform",
-          `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
-        );
+    const enter = selection
+      //.append("g")
+      .attr(
+        "transform",
+        `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+      );
 
-      const boundaryPointData = fillPointData(boundaries, drawableSteps, index);
+    const boundaryPointData = fillPointData(
+      bounds.concat([boundvalue]),
+      drawableSteps.slice(0, -1),
+      allSteps
+    );
 
-      const deleteOldBoundPath = () => {
-        enter.selectAll(".boundary").remove();
-        // remove from component's referencePointData. only for visuals
-        boundaryPointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
-        enter
-          .selectAll(".boundary")
-          .data(boundaryPointData)
-          .enter()
-          .append("path")
-          .attr("class", "boundary")
-          .attr("d", () => lineGenerator(boundaryPointData))
-          .attr("transform", `translate(0 ${offset * index} )`)
-          .attr("fill", "none")
-          .attr("stroke", "red")
-          .attr("stroke-width", "4px");
-      };
+    // movableLineData object
+    let movableBoundData: PointData[] = [
+      { x: stepValtoXPixel()(step), y: 0 }, // now needs some data to work. x coord will always be the step coord
+      { x: dimensions.chartWidth - dimensions.marginRight, y: 0 }, //. y will change so it doenst matter here
+    ];
 
-      // movableLineData object
-      let movableBoundData: PointData[] = [
-        { x: stepValtoXPixel()[index](step), y: 0 }, // now needs some data to work. x coord will always be the step coord
-        { x: dimensions.chartWidth, y: 0 }, //. y will change so it doenst matter here
-      ];
-
-      const movePath = () => {
-        // remove old movableLine
-        enter.selectAll(".movableBound").remove();
-        // add new movableLine and draw it
-        enter
-          .selectAll(".movableBound")
-          .data(movableBoundData)
-          .enter()
-          .append("path")
-          .attr("class", "movableBound")
-          .attr("d", () => lineGenerator(movableBoundData))
-          .attr("transform", `translate(0 ${offset * index} )`)
-          .attr("fill", "none")
-          .attr("stroke", "red")
-          .attr("stroke-width", "4px");
-      };
-
-      // add the boundaryLines. Also implements the drag events.
+    const movePath = () => {
+      // remove old movableLine
+      enter.selectAll(".movableBound").remove();
+      // add new movableLine and draw it
       enter
-        .selectAll(".boundary")
-        .data(boundaryPointData)
+        .selectAll(".movableBound")
+        .data([movableBoundData])
         .enter()
         .append("path")
-        .attr("class", "boundary")
-        .attr("d", () => lineGenerator(boundaryPointData))
-        .attr("transform", `translate(0 ${offset * index} )`)
+        .attr("class", "movableBound")
+        .attr("d", lineGenerator)
+        .attr("transform", `translate(0)`)
         .attr("fill", "none")
         .attr("stroke", "red")
-        .attr("stroke-width", "4px")
-        .call(
-          drag<SVGPathElement, PointData, SVGElement>()
-            .on("start", function () {
-              // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
-            })
-            .on("drag", function (event) {
-              deleteOldBoundPath(); // delete old lines
-              // get data and move while dragging
-              movableBoundData[0].y = event.y;
-              movableBoundData[1].y = event.y;
-              movePath();
-            })
-            .on("end", function (event) {
-              // add line coords to reference data
-              let newYvalue = yPixelToObjVal()[index](event.y);
-              if (newYvalue > ideal[index]) {
-                newYvalue = ideal[index];
-              }
-              if (newYvalue < nadir[index]) {
-                newYvalue = nadir[index];
-              }
-              // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
-              const newBounds = boundaries.map((bound) => bound);
-              newBounds[index][step] = newYvalue;
-              handleBound(newBounds); // call the refence handler
-            })
-        );
-    });
-  }, [selection, boundaries, handleBound]);
- */
+        //.attr("stroke-dasharray", "4,2")
+        .attr("stroke-width", "4px");
+    };
+
+    // add the referenceLines. Also implements the drag events.
+    enter
+      .selectAll(".boundary")
+      .data([boundaryPointData])
+      .enter()
+      .append("path")
+      .attr("class", "boundary")
+      .attr("d", lineGenerator)
+      .attr("transform", `translate(0)`)
+      .attr("fill", "none")
+      .attr("stroke", "red")
+      //.attr("stroke-dasharray", "4,2")
+      .attr("stroke-width", "4px")
+      .call(
+        drag<SVGPathElement, PointData[], SVGElement>()
+          .on("start", function () {
+            // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
+          })
+          .on("drag", function (event) {
+            //deleteOldLinePath(); // delete old lines
+            // get data and move while dragging
+            movableBoundData[0].y = event.y;
+            movableBoundData[1].y = event.y;
+            movePath();
+          })
+          .on("end", function (event) {
+            // add line coords to reference data
+            updateBound(yPixelToObjVal()(event.y));
+          })
+      );
+  };
+
+  useEffect(() => {
+    var lastPoint: number;
+    if (typeof boundValue !== "undefined") {
+      lastPoint = boundValue;
+    } else {
+      lastPoint = bounds[bounds.length - 1];
+    }
+    updateBound(lastPoint);
+  }, [selection, handleBoundValue, bounds]);
 
   /*===================
     useEffect for refLines
     ===================*/
 
-  useEffect(() => {
+  const updateReference = (referencepoint: number) => {
+    if (referencepoint < lReach[lReach.length - 1]) {
+      referencepoint = lReach[lReach.length - 1];
+    }
+    if (referencepoint > uReach[uReach.length - 1]) {
+      referencepoint = uReach[uReach.length - 1];
+    }
+    SetReferencePoint(referencepoint);
+    handleReferenceValue([referencepoint, objectiveID]);
     if (!selection) {
       return;
     }
@@ -490,26 +566,30 @@ export const NavigationBar = ({
     selection.selectAll(".movableLine").remove(); // removes old points
 
     const enter = selection
-      .append("g")
+      //.append("g")
       .attr(
         "transform",
         `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
       );
 
-    const referencePointData = fillPointData(referencePoints, drawableSteps);
+    const referencePointData = fillPointData(
+      referencePoints.concat([referencepoint]),
+      drawableSteps.slice(0, -1),
+      allSteps
+    );
 
     const deleteOldLinePath = () => {
       enter.selectAll(".refPoint").remove();
       // remove from component's referencePointData. only for visuals
-      referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
-      console.log(referencePointData);
+      //referencePointData.splice(step + 1, allSteps - 1); // step + 1, step - 1
+      //console.log(referencePointData);
       enter
         .selectAll(".refPoint")
-        .data(referencePointData)
+        .data([referencePointData])
         .enter()
         .append("path")
         .attr("class", "refPoint")
-        .attr("d", () => lineGenerator(referencePointData))
+        .attr("d", lineGenerator)
         .attr("transform", `translate(0)`)
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
@@ -519,7 +599,7 @@ export const NavigationBar = ({
 
     // movableLineData object
     let movableLineData: PointData[] = [
-      { x: stepValtoXPixel()(step - 1), y: 0 }, // now needs some data to work. x coord will always be the step coord
+      { x: stepValtoXPixel()(step), y: 0 }, // now needs some data to work. x coord will always be the step coord
       { x: dimensions.chartWidth - dimensions.marginRight, y: 0 }, //. y will change so it doenst matter here
     ];
 
@@ -529,11 +609,11 @@ export const NavigationBar = ({
       // add new movableLine and draw it
       enter
         .selectAll(".movableLine")
-        .data(movableLineData)
+        .data([movableLineData])
         .enter()
         .append("path")
         .attr("class", "movableLine")
-        .attr("d", () => lineGenerator(movableLineData))
+        .attr("d", lineGenerator)
         .attr("transform", `translate(0)`)
         .attr("fill", "none")
         .attr("stroke", "darkgreen")
@@ -544,18 +624,18 @@ export const NavigationBar = ({
     // add the referenceLines. Also implements the drag events.
     enter
       .selectAll(".refPoint")
-      .data(referencePointData)
+      .data([referencePointData])
       .enter()
       .append("path")
       .attr("class", "refPoint")
-      .attr("d", () => lineGenerator(referencePointData))
+      .attr("d", lineGenerator)
       .attr("transform", `translate(0)`)
       .attr("fill", "none")
       .attr("stroke", "darkgreen")
       //.attr("stroke-dasharray", "4,2")
       .attr("stroke-width", "3px")
       .call(
-        drag<SVGPathElement, PointData, SVGElement>()
+        drag<SVGPathElement, PointData[], SVGElement>()
           .on("start", function () {
             // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
           })
@@ -568,24 +648,117 @@ export const NavigationBar = ({
           })
           .on("end", function (event) {
             // add line coords to reference data
-            let newYvalue = yPixelToObjVal()(event.y);
-            console.log(newYvalue);
-            if (newYvalue < ideal) {
-              newYvalue = ideal;
-            }
-            if (newYvalue > nadir) {
-              newYvalue = nadir;
-            }
-            SetReferencePoint(newYvalue);
-            console.log(newYvalue);
-            // SUPER IMPORTANT TO **NOT** CHANGE STATE, BUT TO CREATE A NEW OBJECT!
-            //const newRefPoints = referencePoints.map((ref) => ref);
-            //newRefPoints[step] = newYvalue;
-            //handleReferencePoint([newRefPoints, objectiveID]); // call the refence handler
+            updateReference(yPixelToObjVal()(event.y));
           })
       );
-  }, [selection, handleReferencePoint, referencePoints]);
+  };
 
+  useEffect(() => {
+    var lastPoint: number;
+    if (typeof referencePoint !== "undefined") {
+      lastPoint = referencePoint;
+    } else {
+      lastPoint = referencePoints[referencePoints.length - 1];
+    }
+    updateReference(lastPoint);
+  }, [selection, handleReferenceValue, referencePoints]);
+
+  /*===================
+    useEffect for Stepping back
+    ===================*/
+
+  useEffect(() => {
+    var newstep: number;
+    if (typeof newStep !== "undefined") {
+      newstep = newStep;
+    } else {
+      newstep = step;
+    }
+    if (newstep > step) {
+      newstep = step;
+    }
+    if (newstep < 1) {
+      newstep = 1;
+    }
+
+    if (!selection) {
+      return;
+    }
+
+    selection.selectAll(".stepPoint").remove(); // removes old points
+    selection.selectAll(".movableStep").remove(); // removes old points
+
+    const enter = selection
+      //.append("g")
+      .attr(
+        "transform",
+        `translate( ${dimensions.marginLeft} ${dimensions.marginTop})`
+      );
+
+    let movableStepData: PointData[] = [
+      { x: stepValtoXPixel()(newstep), y: 0 }, // now needs some data to work. x coord will always be the step coord
+      { x: stepValtoXPixel()(newstep), y: plotHeight }, //. y will change so it doenst matter here
+    ];
+
+    // movableLineData object
+    let StepData: PointData[] = [
+      { x: stepValtoXPixel()(step), y: 0 }, // now needs some data to work. x coord will always be the step coord
+      { x: stepValtoXPixel()(step), y: plotHeight }, //. y will change so it doenst matter here
+    ];
+
+    const movePath = () => {
+      // remove old movableLine
+      enter.selectAll(".movableStep").remove();
+      // add new movableLine and draw it
+      enter
+        .selectAll(".movableStep")
+        .data([movableStepData])
+        .enter()
+        .append("path")
+        .attr("class", "movableStep")
+        .attr("d", lineGenerator)
+        .attr("transform", `translate(0)`)
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .attr("stroke-dasharray", "4,2");
+      //.attr("stroke-width", "3px");
+    };
+    movePath();
+    // add the referenceLines. Also implements the drag events.
+    enter
+      .selectAll(".stepPoint")
+      .data([StepData])
+      .enter()
+      .append("path")
+      .attr("class", "stepPoint")
+      .attr("d", lineGenerator)
+      .attr("transform", `translate(0)`)
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      //.attr("stroke-dasharray", "4,2")
+      .attr("stroke-width", "5px")
+      .call(
+        drag<SVGPathElement, PointData[], SVGElement>()
+          .on("start", function () {
+            // do nothing, if call delete here, then when clicking the line we remove the line and we dont have anything to drag.
+          })
+          .on("drag", function (event) {
+            //deleteOldLinePath(); // delete old lines
+            // get data and move while dragging
+            movableStepData[0].x = event.x;
+            movableStepData[1].x = event.x;
+            movePath();
+          })
+          .on("end", function (event) {
+            // add line coords to reference data
+            let tempstep = Math.floor(xPixelToStepVal()(event.x));
+            movableStepData[0].x = stepValtoXPixel()(tempstep);
+            movableStepData[1].x = stepValtoXPixel()(tempstep);
+            movePath();
+            handleNewStep(tempstep);
+          })
+      );
+  });
   return (
     <div className="navigator-block">
       <div className="navigator-input">
@@ -636,12 +809,23 @@ export const NavigationBar = ({
                 ]
               }
               value={referencePoint}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                updateReference(Number(e.target.value));
+              }}
               type="number"
               placeholder="Enter desired value"
             />
           </Form.Group>
-          <Form.Group controlId="bouldvalue">
-            <Form.Control type="number" placeholder="Enter bound value" />
+          <Form.Group controlId="boundvalue">
+            <Form.Control
+              type="number"
+              placeholder="Enter bound value"
+              defaultValue={bounds[bounds.length - 1]}
+              value={boundValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                updateBound(Number(e.target.value));
+              }}
+            />
           </Form.Group>
         </Form>
         <div>

@@ -23,3 +23,4 @@ export { default as HorizontalBars } from "./components/HorizontalBars";
 export { default as ParallelAxes } from "./components/ParallelAxes";
 export { default as RadarChart } from "./components/RadarChart";
 export { default as NavigationBars } from "./components/NavigationBars";
+export { default as NavigationWindow } from "./components/NavigationWindow";
